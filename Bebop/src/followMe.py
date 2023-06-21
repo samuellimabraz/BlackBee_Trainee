@@ -11,12 +11,20 @@ from cv_bridge import CvBridge, CvBridgeError
 import time
 from detector import detectPeople, detectHand
 
-# Variáveis de controle
-desired_area = 50000  # Área média desejada para manter a distância padrão
-k_p = 0.0005  # Ganho proporcional para o controle linear.x
-k_p_yaw = 0.008  # Ganho proporcional para o controle angular.z
-k_d_yaw = 0.01  # Ganho derivativo para o controle angular.z
-prev_error_yaw = 0  # Erro anterior para o controle derivativo angular.z
+# Parâmetros do controle PID
+Kp_linear = 0.005  # Constante proporcional do controle PID para linear.x
+Kd_linear = 0.01  # Constante derivativa do controle PID para linear.x
+Kp_angular = 0.01  # Constante proporcional do controle PID para angular.z
+Kd_angular = 0.02  # Constante derivativa do controle PID para angular.z
+
+target_area = 30000  # Área desejada para a pessoa
+area_tolerance = 4000  # Tolerância para considerar movimento linear
+target_center = 320  # Coordenada x do centro desejado
+center_tolerance = 50  # Tolerância para considerar a pessoa centrada
+
+prev_error_area = 0
+prev_error_yaw = 0
+
 
 def control(img, imgOut):
     global desired_area, k_p, k_p_yaw, k_d_yaw, prev_error_yaw
@@ -24,25 +32,39 @@ def control(img, imgOut):
     area, center = detectPeople(img, imgOut)
     event = detectHand(img, imgOut)
 
-    vel_pub = rospy.Publisher('/bebop/cmd_vel', Twist, queue_size=1)
-    move = Twist()
+    cmd_pub = rospy.Publisher("/bebop/cmd_vel", Twist, queue_size=1)
+    vel = Twist()
 
     if center is not None:
-        # Controle proporcional para a direção linear.x
-        error_area = (area - desired_area)
-        toleranciaArea = 3500
-        if abs(error_area) > toleranciaArea:
-            # O movimento será oposto a diferença da área esperada
-            # err > 0 : backward; err < 0 : forward
-            move.linear.x = -(k_p * error_area)
-        
-        # Controle PD para a direção angular.z (yaw)
-        error_yaw = center[0] - img.shape[1] // 2  # Erro de desvio do centro da câmera
-        toleranciaYaw = 0.5
-        if abs(error_yaw) > toleranciaYaw:
-            derivative_yaw = error_yaw - prev_error_yaw
-            prev_error_yaw = error_yaw
-            move.angular.z = k_p_yaw * error_yaw + k_d_yaw * derivative_yaw
+        # Controle PID para movimento linear (linear.x)
+        error_area = target_area - area
+        control_linear = Kp_linear * error_area + Kd_linear * (
+            error_area - prev_error_area
+        )
+
+        # Controle PID para Yaw (angular.z)
+        error_yaw = img.shape[1] // 2 - center[0]
+        control_angular = Kp_angular * error_yaw + Kd_angular * (
+            error_yaw - prev_error_yaw
+        )
+
+        # Ajustar os valores de controle dentro dos limites dos tópicos
+        control_linear = max(min(control_linear, 1.0), -1.0)
+        control_angular = max(min(control_angular, 1.0), -1.0)
+
+        # Atualizar os erros anteriores
+        prev_error_area = error_area
+        prev_error_yaw = error_yaw
+
+        if abs(error_area) > area_tolerance:
+            # err > 0 : forward; err < 0 : backward
+            vel.linear.x = control_linear
+
+        if abs(error_yaw) > center_tolerance:
+            vel.angular.z = control_angular
+
+    cmd_pub.publish(vel)
+
 
 def callback(img):
     try:
@@ -51,23 +73,28 @@ def callback(img):
         print(e)
 
     imgShow = cv_image.copy()
+
     control(img=cv_image, imgShow=imgShow)
 
     cv2.imshow("Image", imgShow)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord("q"):
         rospy.signal_shutdown("Image shutdown")
         cv2.destroyAllWindows()
 
-if __name__ == '__main__':
 
-    rospy.init_node('follow_me', anonymous=True)
+def main():
+    rospy.init_node("follow_me", anonymous=True)
 
-    takeoff_pub = rospy.Publisher('/bebop/takeoff', Empty, queue_size=10)
+    takeoff_pub = rospy.Publisher("/bebop/takeoff", Empty, queue_size=10)
 
     takeoff_pub.publish()
     time.sleep(5)
 
-    image_sub = rospy.Subscribe('/bebop/image_raw', Image, callback)
-    
+    image_sub = rospy.Subscribe("/bebop/image_raw", Image, callback)
+
     rospy.spin()
+
+
+if __name__ == "__main__":
+    main()
