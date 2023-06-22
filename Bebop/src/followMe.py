@@ -25,15 +25,13 @@ center_tolerance = 50  # Tolerância para considerar a pessoa centrada
 prev_error_area = 0
 prev_error_yaw = 0
 
+cmd_pub = rospy.Publisher("/bebop/cmd_vel", Twist, queue_size=1)
+vel = Twist()
+
 
 def control(img, imgOut):
-    global desired_area, k_p, k_p_yaw, k_d_yaw, prev_error_yaw
-
     area, center = detectPeople(img, imgOut)
     event = detectHand(img, imgOut)
-
-    cmd_pub = rospy.Publisher("/bebop/cmd_vel", Twist, queue_size=1)
-    vel = Twist()
 
     if center is not None:
         # Controle PID para movimento linear (linear.x)
