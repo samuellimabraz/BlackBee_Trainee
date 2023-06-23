@@ -43,10 +43,7 @@ def control(img, imgOut):
         # Controle PID para Yaw (angular.z)
 
         error_yaw = center[0] - img.shape[1] // 2
-
-
-        error_yaw = center[0] - img.shape[1] // 2
-
+        
         control_angular = Kp_angular * error_yaw + Kd_angular * (
             error_yaw - prev_error_yaw
         )
