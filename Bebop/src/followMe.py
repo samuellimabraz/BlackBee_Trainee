@@ -8,8 +8,8 @@ from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 
-import time
-from detector import detectPeople, detectHand
+from HandDetector import detectHand
+from PoseDetector import detectPeople
 
 # Parâmetros do controle PID
 Kp_linear = 0.005  # Constante proporcional do controle PID para linear.x
@@ -33,10 +33,10 @@ def control(img, imgOut):
     area, center = detectPeople(img, imgOut)
     event = detectHand(img, imgOut)
 
-    if center is not None:
+    if center:
         # Controle PID para movimento linear (linear.x)
         error_area = target_area - area
-        
+
         control_linear = Kp_linear * error_area + Kd_linear * (
             error_area - prev_error_area
         )
@@ -75,7 +75,7 @@ def callback(img):
 
     imgShow = cv_image.copy()
 
-    control(img=cv_image, imgShow=imgShow)
+    control(cv_image, imgShow)
 
     cv2.imshow("Image", imgShow)
 
@@ -91,7 +91,7 @@ def main():
 
     rospy.sleep(2)
     takeoff_pub.publish()
-    time.sleep(3)
+    rospy.sleep(3)
 
     image_sub = rospy.Subscribe("/bebop/image_raw", Image, callback)
 
