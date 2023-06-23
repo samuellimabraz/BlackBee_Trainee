@@ -28,6 +28,9 @@ prev_error_yaw = 0
 cmd_pub = rospy.Publisher("/bebop/cmd_vel", Twist, queue_size=1)
 vel = Twist()
 
+cmd_pub = rospy.Publisher("/bebop/cmd_vel", Twist, queue_size=1)
+vel = Twist()
+
 
 def control(img, imgOut):
     area, center = detectPeople(img, imgOut)
@@ -42,6 +45,9 @@ def control(img, imgOut):
         )
 
         # Controle PID para Yaw (angular.z)
+
+        error_yaw = center[0] - img.shape[1] // 2
+
 
         error_yaw = center[0] - img.shape[1] // 2
 
