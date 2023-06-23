@@ -22,6 +22,7 @@ def detectPeople(img, imgOut):
 
     results = pose.process(img)
 
+    area, center = 0, 0
     if results.pose_landmarks:
         img.flags.writeable = True
 
@@ -45,7 +46,7 @@ def detectPeople(img, imgOut):
         dist = estimateDistance(lmList)
 
         cv2.putText(
-            img,
+            imgOut,
             f"Area: {area:.2f}",
             (10, 30),
             cv2.FONT_HERSHEY_SIMPLEX,
@@ -54,7 +55,7 @@ def detectPeople(img, imgOut):
             2,
         )
         cv2.putText(
-            img,
+            imgOut,
             f"Dist: {dist:.2f}",
             (10, 60),
             cv2.FONT_HERSHEY_SIMPLEX,
@@ -62,6 +63,7 @@ def detectPeople(img, imgOut):
             (255, 255, 0),
             2,
         )
+    return area, center
 
 
 # def detectPeople(img, imgOut):
@@ -100,7 +102,7 @@ def detectHand(img, imgOut):
     """
 
     # Detecta o rosto na imagem
-    imgOut, bboxs = facesDetector.findFaces(img)
+    img, bboxs = facesDetector.findFaces(img)
 
     event = "None"
 

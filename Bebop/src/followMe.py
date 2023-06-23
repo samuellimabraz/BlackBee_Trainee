@@ -36,6 +36,7 @@ def control(img, imgOut):
     if center is not None:
         # Controle PID para movimento linear (linear.x)
         error_area = target_area - area
+        
         control_linear = Kp_linear * error_area + Kd_linear * (
             error_area - prev_error_area
         )
@@ -88,8 +89,9 @@ def main():
 
     takeoff_pub = rospy.Publisher("/bebop/takeoff", Empty, queue_size=10)
 
+    rospy.sleep(2)
     takeoff_pub.publish()
-    time.sleep(5)
+    time.sleep(3)
 
     image_sub = rospy.Subscribe("/bebop/image_raw", Image, callback)
 
