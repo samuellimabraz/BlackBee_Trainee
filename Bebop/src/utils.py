@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 from cvzone.HandTrackingModule import HandDetector
 from mediapipe.python.solutions.drawing_utils import DrawingSpec
 
@@ -62,6 +63,24 @@ class MyHandDetector(HandDetector):
             return allHands, img
         else:
             return allHands
+
+def findArea(lmList, draw=None):
+    marks = [11, 23, 25, 26, 24, 12]
+
+    points = np.array(lmList)[marks, :2].astype(int)
+    
+    if (draw is not None) and (points.size > 0):
+        cv2.fillPoly(draw, [points], (0, 255, 0))
+
+    return cv2.contourArea(points)
+
+def estimateDistance(lmList):
+    marks = [11, 12, 23, 24]
+    cz = []
+    for i in range(len(marks)):
+        cz.append(lmList[marks[i]][2])
+
+    return np.mean(cz)
 
 def drawRectangleEdges(img, x, y, w, h, r):
     cv2.line(img, (x, y), (x+r, y), (0, 255, 0), 2)
