@@ -16,6 +16,7 @@ def webcam_publisher():
         ret, frame = cap.read()
 
         if ret:
+            cv2.imshow("Image", frame)
             # Converte a imagem para o formato sensor_msgs/Image
             img_msg = CvBridge().cv2_to_imgmsg(frame, encoding="bgr8")
             pub.publish(img_msg)
