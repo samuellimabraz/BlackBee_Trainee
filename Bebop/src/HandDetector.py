@@ -76,5 +76,6 @@ def hand_detector(img):
 
 if __name__ == "__main__":
     rospy.init_node("hand_detector")
-    rospy.Subscriber("/bebop/image_raw", Image, hand_detector)
+    #rospy.Subscriber("/bebop/image_raw", Image, hand_detector)
+    rospy.Subscriber("webcam_image", Image, hand_detector)
     rospy.spin()
