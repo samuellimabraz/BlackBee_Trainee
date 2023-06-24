@@ -12,7 +12,7 @@ from HandDetector import detectHand
 from PoseDetector import detectPeople
 
 # Parâmetros do controle PID
-Kp_linear = 0.005  # Constante proporcional do controle PID para linear.x
+Kp_linear = 0.00004  # Constante proporcional do controle PID para linear.x
 Kd_linear = 0.01  # Constante derivativa do controle PID para linear.x
 Kp_angular = 0.01  # Constante proporcional do controle PID para angular.z
 Kd_angular = 0.02  # Constante derivativa do controle PID para angular.z
@@ -27,6 +27,7 @@ prev_error_yaw = 0
 
 cmd_pub = rospy.Publisher("/bebop/cmd_vel", Twist, queue_size=1)
 vel = Twist()
+
 
 def control(img, imgOut):
     area, center = detectPeople(img, imgOut)
@@ -43,7 +44,7 @@ def control(img, imgOut):
         # Controle PID para Yaw (angular.z)
 
         error_yaw = center[0] - img.shape[1] // 2
-        
+
         control_angular = Kp_angular * error_yaw + Kd_angular * (
             error_yaw - prev_error_yaw
         )
@@ -66,23 +67,6 @@ def control(img, imgOut):
     cmd_pub.publish(vel)
 
 
-def callback(img):
-    try:
-        cv_image = CvBridge().imgmsg_to_cv2(img, "bgr8")
-    except CvBridgeError as e:
-        print(e)
-
-    imgShow = cv_image.copy()
-
-    control(cv_image, imgShow)
-
-    cv2.imshow("Image", imgShow)
-
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        rospy.signal_shutdown("Image shutdown")
-        cv2.destroyAllWindows()
-
-
 def main():
     rospy.init_node("follow_me", anonymous=True)
 
@@ -91,8 +75,6 @@ def main():
     rospy.sleep(2)
     takeoff_pub.publish()
     rospy.sleep(3)
-
-    image_sub = rospy.Subscribe("/bebop/image_raw", Image, callback)
 
     rospy.spin()
 

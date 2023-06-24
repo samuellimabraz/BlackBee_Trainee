@@ -1,17 +1,29 @@
-import cv2
-import mediapipe as mp
+import rospy
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
 
+import cv2
 from cvzone.FaceDetectionModule import FaceDetector
+
 from utils import MyHandDetector, drawRectangleEdges
 
 handsDetector = MyHandDetector(detectionCon=0.8, maxHands=1)
 facesDetector = FaceDetector(minDetectionCon=0.8)
 
-def detectHand(img, imgOut):
+
+def hand_detector(img):
     """
     Realiza a detecção da mão em uma área próximo ao rosto,
     retornando o evento interpretado pelo gesto identificado
     """
+
+    # Leitura do tópico de imagem
+    try:
+        cv_image = CvBridge().imgmsg_to_cv2(img, "bgr8")
+    except CvBridgeError as e:
+        print(e)
+
+    imgOut = cv_image.copy()
 
     # Detecta o rosto na imagem
     img, bboxs = facesDetector.findFaces(img)
@@ -60,3 +72,9 @@ def detectHand(img, imgOut):
                 )
 
     return event
+
+
+if __name__ == "__main__":
+    rospy.init_node("hand_detector")
+    rospy.Subscriber("/bebop/image_raw", Image, hand_detector)
+    rospy.spin()

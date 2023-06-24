@@ -1,3 +1,7 @@
+import rospy
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+
 import cv2
 import mediapipe as mp
 from utils import findArea, estimateDistance
@@ -5,14 +9,26 @@ from utils import findArea, estimateDistance
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose(
-    static_image_mode=False, min_detection_confidence=0.8, min_tracking_confidence=0.8
-)
+pose = mp_pose.Pose(min_detection_confidence=0.8, min_tracking_confidence=0.8)
 
+pose_pub = rospy.Publisher("pose_detect")
 
-def detectPeople(img, imgOut):
+def pose_detector(img):
+    """
+    Realiza a detecção da pessoa,
+    retornando a aréa formada pelos landmarks do tronco,
+    além de seu ponto central
+    """
+
+    # Leitura do tópico de imagem
+    try:
+        img = CvBridge().imgmsg_to_cv2(img, "bgr8")
+    except CvBridgeError as e:
+        print(e)
+
+    imgOut = img.copy()
+
     img.flags.writeable = False
-
     # Processa a imagem com o modelo do mediapipe
     results = pose.process(img)
 
@@ -62,7 +78,14 @@ def detectPeople(img, imgOut):
             (255, 255, 0),
             2,
         )
+
     return area, center
+
+
+if __name__ == "__main__":
+    rospy.init_node("pose_detector")
+    rospy.Subscriber("/bebop/image_raw", Image, pose_detector)
+    rospy.spin()
 
 
 # ------- Código utilizando a classe do cvzone ----------#
