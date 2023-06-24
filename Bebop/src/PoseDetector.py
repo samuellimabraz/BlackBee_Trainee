@@ -11,8 +11,6 @@ mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(min_detection_confidence=0.8, min_tracking_confidence=0.8)
 
-pose_pub = rospy.Publisher("pose_detect")
-
 def pose_detector(img):
     """
     Realiza a detecção da pessoa,
@@ -84,7 +82,8 @@ def pose_detector(img):
 
 if __name__ == "__main__":
     rospy.init_node("pose_detector")
-    rospy.Subscriber("/bebop/image_raw", Image, pose_detector)
+    #rospy.Subscriber("/bebop/image_raw", Image, pose_detector)
+    rospy.Subscriber("webcam_image", Image, hand_detector)
     rospy.spin()
 
 
