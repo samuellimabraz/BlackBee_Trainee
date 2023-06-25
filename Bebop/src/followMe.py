@@ -28,7 +28,6 @@ prev_error_yaw = 0
 cmd_pub = rospy.Publisher("/bebop/cmd_vel", Twist, queue_size=1)
 vel = Twist()
 
-
 def control(img, imgOut):
     area, center = detectPeople(img, imgOut)
     event = detectHand(img, imgOut)
