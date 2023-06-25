@@ -8,7 +8,8 @@ from sensor_msgs.msg import Image
 def webcam_publisher():
     rospy.init_node('webcam_publisher', anonymous=True)
     pub = rospy.Publisher('webcam_image', Image, queue_size=10)
-    rate = rospy.Rate(10)
+
+    rate = rospy.Rate(1000)
 
     cap = cv2.VideoCapture(0)
 
