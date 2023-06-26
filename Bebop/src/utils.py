@@ -2,6 +2,19 @@ import cv2
 import numpy as np
 
 
+def cropImage(img, hcrop, wcrop):
+    height = (
+        int(img.shape[0] * hcrop / 2),
+        int(img.shape[0] - (img.shape[0] * hcrop / 2)),
+    )
+    width = (
+        int(img.shape[1] * wcrop / 2),
+        int(img.shape[1] - (img.shape[1] * wcrop / 2)),
+    )
+
+    return img[height[0] : height[1], width[0] : width[1]]
+
+
 # Calcula a area fromada pela sequencia de pontos
 def findArea(lmList, marks, draw=None):
     points = np.array(lmList)[marks, :2].astype(int)
@@ -34,6 +47,7 @@ def drawRectangleEdges(img, x, y, w, h, r):
     cv2.line(img, (x + w, y + h), (x + w - r, y + h), (0, 255, 0), 2)
     cv2.line(img, (x + w, y + h), (x + w, y + h - r), (0, 255, 0), 2)
 
+
 def cropImage(img, crop):
     altura = (
         int(img.shape[0] * crop / 2),
@@ -45,6 +59,7 @@ def cropImage(img, crop):
     )
     img = img[altura[0] : altura[1], largura[0] : largura[1]]
     return img
+
 
 def stackImages(scale, imgArray):
     """

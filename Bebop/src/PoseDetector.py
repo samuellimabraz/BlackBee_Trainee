@@ -6,7 +6,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 import cv2
 import mediapipe as mp
-from utils import findArea, estimateDistance
+from utils import cropImage, findArea, estimateDistance
 
 
 class PoseDetector:
@@ -36,15 +36,17 @@ class PoseDetector:
         except CvBridgeError as e:
             print(e)
 
-        # Para melhorar o desempenho, opcional
-        cv_img.flags.writeable = False
-        # Processa a imagem com o modelo do mediapipe
-        results = self.pose.process(cv_img)
+        cv_cropped_img = cropImage(cv_img, 0, 0.47)
 
-        area, center = 0, 0
+        # Para melhorar o desempenho, opcional
+        cv_cropped_img.flags.writeable = False
+        # Processa a imagem com o modelo do mediapipe
+        results = self.pose.process(cv_cropped_img)
+
+        area, center, dist = 0, 0
 
         if results.pose_landmarks:
-            cv_img.flags.writeable = True
+            cv_cropped_img.flags.writeable = True
 
             # Desenho dos pose landmarks no frame
             self.mp_drawing.draw_landmarks(
@@ -57,7 +59,7 @@ class PoseDetector:
             # Lista dos landmarks, com seus valores cx, cy e cz
             lmList = []
             for lm in results.pose_landmarks.landmark:
-                h, w, c = cv_img.shape
+                h, w, c = cv_cropped_img.shape
                 cx, cy, cz = abs(int(lm.x * w)), abs(int(lm.y * h)), (lm.z * 1000)
                 lmList.append(([cx, cy, cz]))
 
@@ -87,11 +89,12 @@ class PoseDetector:
                 2,
             )
 
-
         rospy.loginfo(f"Area: {area}, dist: {dist}")
 
-        img_msg = CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
+        cv2.imshow("Pose Detect", cv_img)
+        cv2.waitKey(1)
 
+        img_msg = CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
         self.pose_img_pub.publish(img_msg)
 
     def run(self):
@@ -100,6 +103,7 @@ class PoseDetector:
         rospy.Subscriber(self.image_topic, Image, self.detect)
 
         rospy.spin()
+
 
 if __name__ == "__main__":
     penguin = PoseDetector()

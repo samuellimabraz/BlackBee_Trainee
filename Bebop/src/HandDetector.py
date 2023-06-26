@@ -88,6 +88,9 @@ class MyHandDetector(HandDetector):
 
         rospy.loginfo(f"Event: {event}")
 
+        cv2.imshow("Hand Detect", cv_img)
+        cv2.waitKey(1)
+
         img_msg = CvBridge().cv2_to_imgmsg(cv_img, encoding="bgr8")
         self.hand_img_pub.publish(img_msg)
 
@@ -171,4 +174,3 @@ class MyHandDetector(HandDetector):
 if __name__ == "__main__":
     cafe = MyHandDetector()
     cafe.run()
-
