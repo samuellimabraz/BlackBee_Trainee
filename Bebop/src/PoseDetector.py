@@ -26,23 +26,23 @@ class PoseDetector:
         """
         # Leitura do tópico de imagem no formato cv2
         try:
-            img = CvBridge().imgmsg_to_cv2(img, "bgr8")
+            cv_img = CvBridge().imgmsg_to_cv2(img, "bgr8")
         except CvBridgeError as e:
             print(e)
 
         # Para melhorar o desempenho, opcional
-        img.flags.writeable = False
+        cv_img.flags.writeable = False
         # Processa a imagem com o modelo do mediapipe
-        results = self.pose.process(img)
+        results = self.pose.process(cv_img)
 
         area, center = 0, 0
 
         if results.pose_landmarks:
-            img.flags.writeable = True
+            cv_img.flags.writeable = True
 
             # Desenho dos pose landmarks no frame
             self.mp_drawing.draw_landmarks(
-                img,
+                cv_img,
                 results.pose_landmarks,
                 self.mp_pose.POSE_CONNECTIONS,
                 landmark_drawing_spec=self.mp_drawing_styles.get_default_pose_landmarks_style(),
@@ -57,13 +57,13 @@ class PoseDetector:
 
             # Cálculo e exibição da área do contorno formado pelos pontos
             # Ombro, quadril e joelho: [11, 23, 25, 26, 24, 12]
-            area = findArea(lmList, [11, 23, 24, 12], img)
+            area = findArea(lmList, [11, 23, 24, 12], cv_img)
 
             # Calculo médio da distância dos landmarks até a camera
             dist = estimateDistance(lmList, [11, 12, 23, 24])
 
             cv2.putText(
-                img,
+                cv_img,
                 f"Area: {area:.2f}",
                 (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -72,7 +72,7 @@ class PoseDetector:
                 2,
             )
             cv2.putText(
-                img,
+                cv_img,
                 f"Dist: {dist:.2f}",
                 (10, 60),
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -83,10 +83,8 @@ class PoseDetector:
 
         rospy.loginfo(f"Area: {area}, dist: {dist}")
 
-        img_msg = CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
+        img_msg = CvBridge().cv2_to_imgmsg(cv_img, encoding="bgr8")
         self.pose_img_pub.publish(img_msg)
-
-        return area, center
 
     def run(self):
         rospy.init_node("pose_detector_node")

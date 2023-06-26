@@ -7,7 +7,6 @@ import numpy as np
 
 from utils import stackImages
 
-
 class ImageDisplay:
     def __init__(self):
         # Inicialize as variáveis de instância para armazenar as mensagens recebidas
@@ -41,6 +40,7 @@ class ImageDisplay:
     def process_images(self):
         final_img = stackImages(0.7, [self.pose_image, self.hand_image])
         cv2.imshow("Final Detect", final_img)
+        cv2.waitKey(10)
 
     def run(self):
         rospy.init_node("display_node")
