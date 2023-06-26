@@ -17,6 +17,9 @@ class PoseDetector:
         )
 
         self.pose_img_pub = rospy.Publisher("pose_image", Image, queue_size=1)
+        # Obtenha o valor do parâmetro "image_topic"
+        # bebop/image_raw ou webcam_image
+        self.image_topic = rospy.get_param("~image_topic", "webcam_image")
 
     def detect(self, img):
         """
@@ -81,7 +84,6 @@ class PoseDetector:
                 2,
             )
 
-
         rospy.loginfo(f"Area: {area}, dist: {dist}")
 
         img_msg = CvBridge().cv2_to_imgmsg(cv_img, encoding="bgr8")
@@ -90,7 +92,7 @@ class PoseDetector:
     def run(self):
         rospy.init_node("pose_detector_node")
 
-        rospy.Subscriber("webcam_image", Image, self.detect)
+        rospy.Subscriber(self.image_topic, Image, self.detect)
 
         rospy.spin()
 

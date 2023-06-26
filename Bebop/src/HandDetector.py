@@ -16,6 +16,9 @@ class MyHandDetector(HandDetector):
         self.facesDetector = FaceDetector(minDetectionCon=0.8)
 
         self.hand_img_pub = rospy.Publisher("hand_image", Image, queue_size=1)
+        # Obtenha o valor do parâmetro "image_topic"
+        # bebop/image_raw ou webcam_image
+        self.image_topic = rospy.get_param("~image_topic", "webcam_image")
 
     def detect(self, img):
         """
@@ -79,7 +82,6 @@ class MyHandDetector(HandDetector):
                         (255, 0, 255),
                         2,
                     )
-
 
         rospy.loginfo(f"Event: {event}")
 
@@ -157,11 +159,12 @@ class MyHandDetector(HandDetector):
 
     def run(self):
         rospy.init_node("hand_detector_node")
-        rospy.Subscriber("webcam_image", Image, self.detect)
+
+        rospy.Subscriber(self.image_topic, Image, self.detect)
+
         rospy.spin()
 
 
 if __name__ == "__main__":
     cafe = MyHandDetector()
     cafe.run()
-
