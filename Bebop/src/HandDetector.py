@@ -171,3 +171,4 @@ class MyHandDetector(HandDetector):
 if __name__ == "__main__":
     cafe = MyHandDetector()
     cafe.run()
+

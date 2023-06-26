@@ -11,6 +11,7 @@ from utils import stackImages
 
 
 class ImageDisplay:
+
     def __init__(self):
         # Inicialize as variáveis de instância para armazenar as mensagens recebidas
         self.pose_image = np.zeros((480, 640, 3))
@@ -49,6 +50,7 @@ class ImageDisplay:
 
     def run(self):
         rospy.init_node("display_node")
+
 
         #cv2.namedWindow("Final Detect")
 

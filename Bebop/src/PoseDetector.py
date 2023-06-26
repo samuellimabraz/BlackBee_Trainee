@@ -87,9 +87,11 @@ class PoseDetector:
                 2,
             )
 
+
         rospy.loginfo(f"Area: {area}, dist: {dist}")
 
-        img_msg = CvBridge().cv2_to_imgmsg(cv_img, encoding="bgr8")
+        img_msg = CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
+
         self.pose_img_pub.publish(img_msg)
 
     def run(self):
@@ -98,7 +100,6 @@ class PoseDetector:
         rospy.Subscriber(self.image_topic, Image, self.detect)
 
         rospy.spin()
-
 
 if __name__ == "__main__":
     penguin = PoseDetector()

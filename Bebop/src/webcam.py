@@ -11,7 +11,7 @@ def webcam_publisher():
 
     pub = rospy.Publisher("webcam_image", Image, queue_size=10)
     # rate = rospy.Rate(1000)
-
+    
     cap = cv2.VideoCapture(0)
 
     print("Webcam inicada")
@@ -43,3 +43,7 @@ if __name__ == '__main__':
         webcam_publisher()
     except rospy.ROSInterruptException:
         pass
+
+    # Encerrar todos os nós após a saída do loop
+    rospy.shutdown()
+
