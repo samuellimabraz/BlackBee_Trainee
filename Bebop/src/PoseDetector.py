@@ -81,17 +81,21 @@ class PoseDetector:
                 2,
             )
 
+        rospy.loginfo(f"Area: {area}, dist: {dist}")
+
         img_msg = CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
         self.pose_img_pub.publish(img_msg)
 
         return area, center
 
+    def run(self):
+        rospy.init_node("pose_detector_node")
+
+        rospy.Subscriber("webcam_image", Image, self.detect)
+
+        rospy.spin()
+
 
 if __name__ == "__main__":
-    rospy.init_node("pose_detector")
-
     penguin = PoseDetector()
-    rospy.Subscriber("webcam_image", Image, penguin.detect)
-    # rospy.Subscriber("/bebop/image_raw", Image, penguin.pose_detector)
-
-    rospy.spin()
+    penguin.run()

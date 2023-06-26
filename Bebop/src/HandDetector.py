@@ -9,6 +9,7 @@ from mediapipe.python.solutions.drawing_utils import DrawingSpec
 
 from utils import drawRectangleEdges
 
+
 class MyHandDetector(HandDetector):
     def __init__(self) -> None:
         super().__init__(maxHands=1, detectionCon=0.8, minTrackCon=0.7)
@@ -74,11 +75,13 @@ class MyHandDetector(HandDetector):
                         img, event, (x, y), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2
                     )
 
+        rospy.loginfo(f"Event: {event}")
+
         img_msg = CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
         self.hand_img_pub.publish(img_msg)
 
         return event
-    
+
     def findHands(self, img, draw=True, flipType=True):
         """
         Finds hands in a BGR image.
@@ -148,13 +151,12 @@ class MyHandDetector(HandDetector):
         else:
             return allHands
 
+    def run(self):
+        rospy.init_node("hand_detector_node")
+        rospy.Subscriber("webcam_image", Image, self.detect)
+        rospy.spin()
+
 
 if __name__ == "__main__":
-    rospy.init_node("hand_detector")
-
     cafe = MyHandDetector()
-
-    # rospy.Subscriber("/bebop/image_raw", Image, cafe.detect)
-    rospy.Subscriber("webcam_image", Image, cafe.detect)
-
-    rospy.spin()
+    cafe.run()
