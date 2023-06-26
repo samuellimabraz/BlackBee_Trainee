@@ -6,6 +6,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 import cv2
 import mediapipe as mp
+import numpy as np
 from utils import cropImage, findArea, estimateDistance
 
 
@@ -37,6 +38,7 @@ class PoseDetector:
             print(e)
 
         cv_cropped_img = cropImage(cv_img, 0, 0.47)
+        cv_cropped_img = np.ascontiguousarray(cv_cropped_img)
 
         # Para melhorar o desempenho, opcional
         cv_cropped_img.flags.writeable = False
