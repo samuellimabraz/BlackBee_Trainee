@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
@@ -16,21 +18,24 @@ class MyHandDetector(HandDetector):
         self.facesDetector = FaceDetector(minDetectionCon=0.8)
 
         self.hand_img_pub = rospy.Publisher("hand_image", Image, queue_size=1)
+        self.bridge = CvBridge()
+        # Obtenha o valor do parâmetro "image_topic"
+        # bebop/image_raw ou webcam_image
+        self.image_topic = rospy.get_param("~image_topic", "webcam_image")
 
     def detect(self, img):
         """
         Realiza a detecção da mão em uma área próximo ao rosto,
         retornando o evento interpretado pelo gesto identificado
         """
-
         # Leitura do tópico de imagem
         try:
-            cv_image = CvBridge().imgmsg_to_cv2(img, "bgr8")
+            cv_img = self.bridge.imgmsg_to_cv2(img, "bgr8")
         except CvBridgeError as e:
             print(e)
 
         # Detecta o rosto na imagem
-        img, bboxs = self.facesDetector.findFaces(img)
+        cv_img, bboxs = self.facesDetector.findFaces(cv_img)
 
         event = "None"
 
@@ -42,9 +47,9 @@ class MyHandDetector(HandDetector):
             h = abs(hb + 60)
             x = abs(xb - w - 40)
             y = abs(yb)
-            drawRectangleEdges(img, x, y, w, h, 20)
+            drawRectangleEdges(cv_img, x, y, w, h, 20)
 
-            detect = img[y : (y + h), x : (x + w)]
+            detect = cv_img[y : (y + h), x : (x + w)]
 
             # Detecta a mão e identifica o gesto pela posição dos dedos
             hands, detect = self.findHands(detect)
@@ -72,16 +77,19 @@ class MyHandDetector(HandDetector):
                         event = "FLIP"
 
                     cv2.putText(
-                        img, event, (x, y), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2
+                        cv_img,
+                        event,
+                        (x, y),
+                        cv2.FONT_HERSHEY_PLAIN,
+                        2,
+                        (255, 0, 255),
+                        2,
                     )
 
-
         rospy.loginfo(f"Event: {event}")
-  
-        img_msg = CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
-        self.hand_img_pub.publish(img_msg)
 
-        return event
+        img_msg = CvBridge().cv2_to_imgmsg(cv_img, encoding="bgr8")
+        self.hand_img_pub.publish(img_msg)
 
     def findHands(self, img, draw=True, flipType=True):
         """
@@ -154,7 +162,9 @@ class MyHandDetector(HandDetector):
 
     def run(self):
         rospy.init_node("hand_detector_node")
-        rospy.Subscriber("webcam_image", Image, self.detect)
+
+        rospy.Subscriber(self.image_topic, Image, self.detect)
+
         rospy.spin()
 
 

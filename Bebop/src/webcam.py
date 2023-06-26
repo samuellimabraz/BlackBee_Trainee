@@ -7,11 +7,11 @@ from sensor_msgs.msg import Image
 
 
 def webcam_publisher():
-    rospy.init_node('webcam_publisher', anonymous=True)
-    
-    pub = rospy.Publisher('webcam_image', Image, queue_size=10)
-    rate = rospy.Rate(1000)
+    rospy.init_node("webcam_publisher", anonymous=True)
 
+    pub = rospy.Publisher("webcam_image", Image, queue_size=10)
+    # rate = rospy.Rate(1000)
+    
     cap = cv2.VideoCapture(0)
 
     print("Webcam inicada")
@@ -31,7 +31,7 @@ def webcam_publisher():
         img_msg = CvBridge().cv2_to_imgmsg(frame, encoding="bgr8")
         pub.publish(img_msg)
 
-        rate.sleep()
+        # rate.sleep()
 
     cap.release()
     cv2.destroyAllWindows()

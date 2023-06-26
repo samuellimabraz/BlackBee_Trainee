@@ -1,8 +1,9 @@
+#!/usr/bin/env python
+
 import rospy
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
-
 
 import numpy as np
 
@@ -10,16 +11,12 @@ from utils import stackImages
 
 
 class ImageDisplay:
+
     def __init__(self):
         # Inicialize as variáveis de instância para armazenar as mensagens recebidas
         self.pose_image = np.zeros((480, 640, 3))
         self.hand_image = np.zeros((480, 640, 3))
-
-class ImageCombiner:
-    def __init__(self):
-        # Inicialize as variáveis de instância para armazenar as mensagens recebidas
-        self.pose_image = None
-        self.hand_image = None
+        self.bridge = CvBridge()
 
     def pose_callback(self, img):
         # Atualize a imagem da pose
@@ -54,7 +51,8 @@ class ImageCombiner:
     def run(self):
         rospy.init_node("display_node")
 
-        cv2.namedWindow("Final Detect")
+
+        #cv2.namedWindow("Final Detect")
 
         # Inscreva-se nos tópicos de imagem
         rospy.Subscriber("pose_image", Image, self.pose_callback)
