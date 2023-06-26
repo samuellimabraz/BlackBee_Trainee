@@ -16,6 +16,7 @@ class MyHandDetector(HandDetector):
         self.facesDetector = FaceDetector(minDetectionCon=0.8)
 
         self.hand_img_pub = rospy.Publisher("hand_image", Image, queue_size=1)
+        self.bridge = CvBridge()
         # Obtenha o valor do parâmetro "image_topic"
         # bebop/image_raw ou webcam_image
         self.image_topic = rospy.get_param("~image_topic", "webcam_image")
@@ -27,7 +28,7 @@ class MyHandDetector(HandDetector):
         """
         # Leitura do tópico de imagem
         try:
-            cv_img = CvBridge().imgmsg_to_cv2(img, "bgr8")
+            cv_img = self.bridge.imgmsg_to_cv2(img, "bgr8")
         except CvBridgeError as e:
             print(e)
 
@@ -44,7 +45,7 @@ class MyHandDetector(HandDetector):
             h = abs(hb + 60)
             x = abs(xb - w - 40)
             y = abs(yb)
-            drawRectangleEdges(img, x, y, w, h, 20)
+            drawRectangleEdges(cv_img, x, y, w, h, 20)
 
             detect = cv_img[y : (y + h), x : (x + w)]
 
