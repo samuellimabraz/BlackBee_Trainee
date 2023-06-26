@@ -3,6 +3,7 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 
+
 import numpy as np
 
 from utils import stackImages
@@ -12,6 +13,12 @@ class ImageDisplay:
         # Inicialize as variáveis de instância para armazenar as mensagens recebidas
         self.pose_image = np.zeros((480, 640, 3))
         self.hand_image = np.zeros((480, 640, 3))
+
+class ImageCombiner:
+    def __init__(self):
+        # Inicialize as variáveis de instância para armazenar as mensagens recebidas
+        self.pose_image = None
+        self.hand_image = None
 
     def pose_callback(self, img):
         # Atualize a imagem da pose
@@ -38,6 +45,7 @@ class ImageDisplay:
         self.process_images()
 
     def process_images(self):
+
         final_img = stackImages(0.7, [self.pose_image, self.hand_image])
         cv2.imshow("Final Detect", final_img)
         cv2.waitKey(10)
@@ -57,3 +65,4 @@ class ImageDisplay:
 if __name__ == "__main__":
     wow = ImageDisplay()
     wow.run()
+

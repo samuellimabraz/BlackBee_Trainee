@@ -37,7 +37,8 @@ def webcam_publisher():
     cv2.destroyAllWindows()
 
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     try:
         webcam_publisher()
     except rospy.ROSInterruptException:

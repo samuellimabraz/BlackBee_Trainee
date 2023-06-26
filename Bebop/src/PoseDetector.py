@@ -81,6 +81,7 @@ class PoseDetector:
                 2,
             )
 
+
         rospy.loginfo(f"Area: {area}, dist: {dist}")
 
         img_msg = CvBridge().cv2_to_imgmsg(cv_img, encoding="bgr8")
