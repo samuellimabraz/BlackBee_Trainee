@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
@@ -17,6 +19,7 @@ class PoseDetector:
         )
 
         self.pose_img_pub = rospy.Publisher("pose_image", Image, queue_size=1)
+        self.bridge = CvBridge()
         # Obtenha o valor do parâmetro "image_topic"
         # bebop/image_raw ou webcam_image
         self.image_topic = rospy.get_param("~image_topic", "webcam_image")
@@ -29,7 +32,7 @@ class PoseDetector:
         """
         # Leitura do tópico de imagem no formato cv2
         try:
-            cv_img = CvBridge().imgmsg_to_cv2(img, "bgr8")
+            cv_img = self.bridge.imgmsg_to_cv2(img, "bgr8")
         except CvBridgeError as e:
             print(e)
 
@@ -54,7 +57,7 @@ class PoseDetector:
             # Lista dos landmarks, com seus valores cx, cy e cz
             lmList = []
             for lm in results.pose_landmarks.landmark:
-                h, w, c = img.shape
+                h, w, c = cv_img.shape
                 cx, cy, cz = abs(int(lm.x * w)), abs(int(lm.y * h)), (lm.z * 1000)
                 lmList.append(([cx, cy, cz]))
 
