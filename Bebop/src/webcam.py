@@ -7,9 +7,9 @@ from sensor_msgs.msg import Image
 
 
 def webcam_publisher():
-    rospy.init_node("webcam_publisher", anonymous=True)
-
-    pub = rospy.Publisher("webcam_image", Image, queue_size=10)
+    rospy.init_node('webcam_publisher', anonymous=True)
+    
+    pub = rospy.Publisher('webcam_image', Image, queue_size=10)
     rate = rospy.Rate(1000)
 
     cap = cv2.VideoCapture(0)
@@ -37,7 +37,8 @@ def webcam_publisher():
     cv2.destroyAllWindows()
 
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     try:
         webcam_publisher()
     except rospy.ROSInterruptException:
@@ -45,3 +46,4 @@ if __name__ == "__main__":
 
     # Encerrar todos os nós após a saída do loop
     rospy.shutdown()
+

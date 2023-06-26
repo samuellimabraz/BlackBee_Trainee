@@ -81,12 +81,14 @@ class PoseDetector:
                 2,
             )
 
+
         rospy.loginfo(f"Area: {area}, dist: {dist}")
 
         img_msg = CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
         self.pose_img_pub.publish(img_msg)
 
         return area, center
+
 
     def run(self):
         rospy.init_node("pose_detector_node")
