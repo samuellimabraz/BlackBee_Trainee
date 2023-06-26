@@ -5,11 +5,14 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 import cv2
+
 from cvzone.FaceDetectionModule import FaceDetector
 from cvzone.HandTrackingModule import HandDetector
 from mediapipe.python.solutions.drawing_utils import DrawingSpec
 
-from utils import drawRectangleEdges
+import numpy as np
+
+from utils import cropImage, drawRectangleEdges
 
 
 class MyHandDetector(HandDetector):
@@ -34,8 +37,11 @@ class MyHandDetector(HandDetector):
         except CvBridgeError as e:
             print(e)
 
+        cv_cropped_img = cropImage(cv_img, 0, 0.4)
+        cv_cropped_img = np.ascontiguousarray(cv_cropped_img)
+
         # Detecta o rosto na imagem
-        cv_img, bboxs = self.facesDetector.findFaces(cv_img)
+        cv_img, bboxs = self.facesDetector.findFaces(cv_cropped_img)
 
         event = "None"
 
