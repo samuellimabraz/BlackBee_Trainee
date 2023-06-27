@@ -1,5 +1,10 @@
+#!/usr/bin/env pythonss
+
 import cv2
 import numpy as np
+
+from cvzone.HandTrackingModule import HandDetector
+from mediapipe.python.solutions.drawing_utils import DrawingSpec
 
 
 def cropImage(img, hcrop, wcrop):
@@ -46,19 +51,6 @@ def drawRectangleEdges(img, x, y, w, h, r):
 
     cv2.line(img, (x + w, y + h), (x + w - r, y + h), (0, 255, 0), 2)
     cv2.line(img, (x + w, y + h), (x + w, y + h - r), (0, 255, 0), 2)
-
-
-def cropImage(img, crop):
-    altura = (
-        int(img.shape[0] * crop / 2),
-        int(img.shape[0] - (img.shape[0] * crop / 2)),
-    )
-    largura = (
-        int(img.shape[1] * crop / 2),
-        int(img.shape[1] - (img.shape[1] * crop / 2)),
-    )
-    img = img[altura[0] : altura[1], largura[0] : largura[1]]
-    return img
 
 
 def stackImages(scale, imgArray):
@@ -112,3 +104,73 @@ def stackImages(scale, imgArray):
         hor = np.hstack(imgArray)
         ver = hor
     return ver
+
+class MyHandDetector(HandDetector):
+    def findHands(self, img, draw=True, flipType=True):
+        """
+        Finds hands in a BGR image.
+        :param img: Image to find the hands in.
+        :param draw: Flag to draw the output on the image.
+        :return: Image with or without drawings
+        """
+        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        self.results = self.hands.process(imgRGB)
+        allHands = []
+        h, w, c = img.shape
+        if self.results.multi_hand_landmarks:
+            for handType, handLms in zip(
+                self.results.multi_handedness, self.results.multi_hand_landmarks
+            ):
+                myHand = {}
+                ## lmList
+                mylmList = []
+                xList = []
+                yList = []
+                for id, lm in enumerate(handLms.landmark):
+                    px, py, pz = int(lm.x * w), int(lm.y * h), int(lm.z * w)
+                    mylmList.append([px, py, pz])
+                    xList.append(px)
+                    yList.append(py)
+
+                ## bbox
+                xmin, xmax = min(xList), max(xList)
+                ymin, ymax = min(yList), max(yList)
+                boxW, boxH = xmax - xmin, ymax - ymin
+                bbox = xmin, ymin, boxW, boxH
+                cx, cy = bbox[0] + (bbox[2] // 2), bbox[1] + (bbox[3] // 2)
+
+                myHand["lmList"] = mylmList
+                myHand["bbox"] = bbox
+                myHand["center"] = (cx, cy)
+
+                if flipType:
+                    if handType.classification[0].label == "Right":
+                        myHand["type"] = "Left"
+                    else:
+                        myHand["type"] = "Right"
+                else:
+                    myHand["type"] = handType.classification[0].label
+                allHands.append(myHand)
+
+                ## draw
+                if draw:
+                    landmark_drawing_spec = DrawingSpec(
+                        color=(255, 0, 106), thickness=2, circle_radius=2
+                    )
+                    self.mpDraw.draw_landmarks(
+                        img,
+                        handLms,
+                        self.mpHands.HAND_CONNECTIONS,
+                        landmark_drawing_spec,
+                    )
+                    # cv2.rectangle(
+                    #     img,
+                    #     (bbox[0] - 20, bbox[1] - 20),
+                    #     (bbox[0] + bbox[2] + 20, bbox[1] + bbox[3] + 20),
+                    #     (0, 255, 0),
+                    #     2,
+                    # )
+        if draw:
+            return allHands, img
+        else:
+            return allHands
