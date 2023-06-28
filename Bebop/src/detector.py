@@ -14,9 +14,16 @@ import numpy as np
 
 from utils import *
 
+
 class Detector:
     def __init__(self) -> None:
-        self.handDetector = MyHandDetector(maxHands=1, detectionCon=0.8, minTrackCon=0.7)
+        rospy.init_node("detector_node", anonymous=True)
+
+        self.image_topic = rospy.get_param("~image_topic", "webcam_image")
+
+        self.handDetector = MyHandDetector(
+            maxHands=1, detectionCon=0.8, minTrackCon=0.7
+        )
         self.faceDetector = FaceDetector(minDetectionCon=0.8)
 
         self.mp_drawing = mp.solutions.drawing_utils
@@ -31,28 +38,18 @@ class Detector:
 
         self.bridge = CvBridge()
 
-        self.image_topic = rospy.get_param("~image_topic", "webcam_image")
-        print(self.image_topic)
-        rospy.init_node("detector_node", anonymous=True)
-
-    
     def hand_detect(self, img):
         """
         Realiza a detecção da mão em uma área próximo ao rosto,
         retornando o evento interpretado pelo gesto identificado
         """
-        # if self.image_topic == "bebop/image_raw":
-        #     try:
-        #         cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
-        #     except CvBridgeError as e:
-        #         print(e)
-        # else:
-        #     cv_img = img.copy()
-
-        try:
-            cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
-        except CvBridgeError as e:
-            print(e)
+        if self.image_topic == "bebop":
+            try:
+                cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
+            except CvBridgeError as e:
+                print(e)
+        else:
+            cv_img = img.copy()
 
         # Detecta o rosto na imagem
         img, bboxs = self.faceDetector.findFaces(cv_img)
@@ -76,35 +73,34 @@ class Detector:
 
             if hands:
                 hand = hands[0]
-                if hand["type"] == "Right":
-                    # Detecta os dedos levantados ou não
-                    fingers = self.handDetector.fingersUp(hand)
+                # Detecta os dedos levantados ou não
+                fingers = self.handDetector.fingersUp(hand)
 
-                    # Cria os eventos para cada gesto
-                    if fingers == [0, 1, 0, 0, 0]:
-                        event = "UP"
-                    elif fingers == [0, 1, 1, 0, 0]:
-                        event = "DOWN"
-                    elif fingers == [1, 1, 1, 1, 1]:
-                        event = "WAIT"
-                    elif fingers == [1, 0, 0, 0, 0]:
-                        event = "LEFT"
-                    elif fingers == [0, 0, 0, 0, 1]:
-                        event = "RIGHT"
-                    elif fingers == [0, 0, 0, 0, 0]:
-                        event = "FRONT"
-                    elif fingers == [0, 1, 0, 0, 1]:
-                        event = "FLIP"
+                # Cria os eventos para cada gesto
+                if fingers == [0, 1, 0, 0, 0]:
+                    event = "UP"
+                elif fingers == [0, 1, 1, 0, 0]:
+                    event = "DOWN"
+                elif fingers == [1, 1, 1, 1, 1]:
+                    event = "WAIT"
+                elif fingers == [1, 0, 0, 0, 0]:
+                    event = "LEFT"
+                elif fingers == [0, 0, 0, 0, 1]:
+                    event = "RIGHT"
+                elif fingers == [0, 0, 0, 0, 0]:
+                    event = "FRONT"
+                elif fingers == [0, 1, 0, 0, 1]:
+                    event = "FLIP"
 
-                    cv2.putText(
-                        cv_img,
-                        event,
-                        (x, y),
-                        cv2.FONT_HERSHEY_PLAIN,
-                        2,
-                        (255, 0, 255),
-                        2,
-                    )
+                cv2.putText(
+                    cv_img,
+                    event,
+                    (x, y),
+                    cv2.FONT_HERSHEY_PLAIN,
+                    2,
+                    (255, 0, 255),
+                    2,
+                )
 
         rospy.loginfo(f"Event: {event}")
 
@@ -113,23 +109,11 @@ class Detector:
 
         self.hand_detect_img = cv_img
     
+
     def people_detect(self, img):
 
-        # if self.image_topic == "bebop/image_raw":
-        #     try:
-        #         cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
-        #     except CvBridgeError as e:
-        #         print(e)
-        # else:
-        #     cv_img = img.copy()
-
-        try:
-            cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
-        except CvBridgeError as e:
-            print(e)
-
-        crop_img = cropImage(cv_img, 0.0, 0.47)
-        crop_img = np.ascontiguousarray(cv_img)
+        crop_img = cropImage(img, 0.0, 0.47)
+        crop_img = np.ascontiguousarray(img)
 
         # Para melhorar o desempenho, opcional
         crop_img.flags.writeable = False
@@ -143,7 +127,7 @@ class Detector:
 
             # Desenho dos pose landmarks no frame
             self.mp_drawing.draw_landmarks(
-                cv_img,
+                img,
                 results.pose_landmarks,
                 self.mp_pose.POSE_CONNECTIONS,
                 landmark_drawing_spec=self.mp_drawing_styles.get_default_pose_landmarks_style(),
@@ -152,19 +136,19 @@ class Detector:
             # Lista dos landmarks, com seus valores cx, cy e cz
             lmList = []
             for lm in results.pose_landmarks.landmark:
-                h, w, _ = cv_img.shape
+                h, w, _ = img.shape
                 cx, cy, cz = abs(int(lm.x * w)), abs(int(lm.y * h)), (lm.z * 1000)
                 lmList.append(([cx, cy, cz]))
 
             # Cálculo e exibição da área do contorno formado pelos pontos
             # Ombro, quadril e joelho: [11, 23, 25, 26, 24, 12]
-            area = findArea(lmList, [11, 23, 24, 12], cv_img)
+            area = findArea(lmList, [11, 23, 24, 12], img)
 
             # Calculo médio da distância dos landmarks até a camera
-            dist = estimateDistance(lmList, [11, 12, 23, 24])
+            #dist = estimateDistance(lmList, [11, 12, 23, 24])
 
             cv2.putText(
-                cv_img,
+                img,
                 f"Area: {area:.2f}",
                 (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -172,58 +156,44 @@ class Detector:
                 (255, 255, 0),
                 2,
             )
-            cv2.putText(
-                cv_img,
-                f"Dist: {dist:.2f}",
-                (10, 60),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (255, 255, 0),
-                2,
-            )
 
-        rospy.loginfo(f"Area: {area}, dist: {dist}")
+        rospy.loginfo(f"Area: {area}")
 
-        cv2.imshow("POse", cv_img)
-        cv2.waitKey(1)
-
-        self.pose_detect_img = cv_img
-    
-    def all_detect(self, img):
-        #self.hand_detect(img)
-        self.people_detect(img)
-
-        # out = stackImages(1, [self.hand_detect_img, self.pose_detect_img])
-        # cv2.imshow("Image", out)
+        # cv2.imshow("Pose", cv_img)
         # cv2.waitKey(1)
 
+        self.pose_detect_img = img
 
-    def run(self):
-        if self.image_topic == "bebop/image_raw":
-            self.bebop_run()
+    def detect(self, img):
+        if self.image_topic == "bebop":
+            try:
+                cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
+            except CvBridgeError as e:
+                print(e)
         else:
-            self.webcam_run()
-    
+            cv_img = img.copy()
+
+        self.hand_detect(cv_img)
+        self.people_detect(cv_img)
+
+        out = stackImages(1, [self.hand_detect_img, self.pose_detect_img])
+        cv2.imshow("Image", out)
+        cv2.waitKey(1)
+
     def bebop_run(self):
-        print("ALou")
-        rospy.Subscriber("bebop/image_raw/compressed", CompressedImage, self.all_detect)
+        rospy.Subscriber("bebop/image_raw/compressed", CompressedImage, self.detect)
         rospy.spin()
 
     def webcam_run(self):
         cap = cv2.VideoCapture(0)
-
-        print("Webcam inicada")
 
         while not rospy.is_shutdown():
             ret, frame = cap.read()
 
             if not ret:
                 continue
-            
-            self.all_detect(frame)
 
-            out = stackImages(1, [self.hand_detect_img, self.pose_detect_img])
-            cv2.imshow("Image", out)
+            self.detect(frame)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 rospy.signal_shutdown("Janela fechada")
@@ -232,8 +202,15 @@ class Detector:
         cap.release()
         cv2.destroyAllWindows()
     
+    def run(self):
+        print(f"Captura: {self.image_topic}")
 
-if __name__ == '__main__':
+        if self.image_topic == "bebop":
+            self.bebop_run()
+        elif self.image_topic == "webcam":
+            self.webcam_run()
+
+
+if __name__ == "__main__":
     opa = Detector()
-    opa.bebop_run()
-
+    opa.run()
