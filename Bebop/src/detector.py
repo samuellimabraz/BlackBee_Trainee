@@ -29,7 +29,11 @@ class Detector:
         self.hand_detect_img = np.zeros((480, 640, 3))
         self.pose_detect_img = np.zeros((480, 640, 3))
 
+        self.bridge = CvBridge()
+
         self.image_topic = rospy.get_param("~image_topic", "webcam_image")
+        print(self.image_topic)
+        rospy.init_node("detector_node", anonymous=True)
 
     
     def hand_detect(self, img):
@@ -37,13 +41,18 @@ class Detector:
         Realiza a detecção da mão em uma área próximo ao rosto,
         retornando o evento interpretado pelo gesto identificado
         """
-        if self.image_topic == "bebop/image_raw":
-            try:
-                cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
-            except CvBridgeError as e:
-                print(e)
-        else:
-            cv_img = img.copy()
+        # if self.image_topic == "bebop/image_raw":
+        #     try:
+        #         cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
+        #     except CvBridgeError as e:
+        #         print(e)
+        # else:
+        #     cv_img = img.copy()
+
+        try:
+            cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
+        except CvBridgeError as e:
+            print(e)
 
         # Detecta o rosto na imagem
         img, bboxs = self.faceDetector.findFaces(cv_img)
@@ -97,32 +106,40 @@ class Detector:
                         2,
                     )
 
-        #rospy.loginfo(f"Event: {event}")
+        rospy.loginfo(f"Event: {event}")
+
+        # cv2.imshow("Hand", cv_img)
+        # cv2.waitKey(1)
 
         self.hand_detect_img = cv_img
     
     def people_detect(self, img):
 
-        if self.image_topic == "bebop/image_raw":
-            try:
-                cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
-            except CvBridgeError as e:
-                print(e)
-        else:
-            cv_img = img.copy()
+        # if self.image_topic == "bebop/image_raw":
+        #     try:
+        #         cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
+        #     except CvBridgeError as e:
+        #         print(e)
+        # else:
+        #     cv_img = img.copy()
 
-        cv_img = cropImage(cv_img, 0.0, 0.47)
-        cv_img = np.ascontiguousarray(cv_img)
+        try:
+            cv_img = self.bridge.compressed_imgmsg_to_cv2(img, "bgr8")
+        except CvBridgeError as e:
+            print(e)
+
+        crop_img = cropImage(cv_img, 0.0, 0.47)
+        crop_img = np.ascontiguousarray(cv_img)
 
         # Para melhorar o desempenho, opcional
-        cv_img.flags.writeable = False
+        crop_img.flags.writeable = False
         # Processa a imagem com o modelo do mediapipe
-        results = self.pose.process(cv_img)
+        results = self.pose.process(crop_img)
 
         area, center, dist = 0, 0, 0
 
         if results.pose_landmarks:
-            cv_img.flags.writeable = True
+            crop_img.flags.writeable = True
 
             # Desenho dos pose landmarks no frame
             self.mp_drawing.draw_landmarks(
@@ -165,14 +182,34 @@ class Detector:
                 2,
             )
 
-        #rospy.loginfo(f"Area: {area}, dist: {dist}")
+        rospy.loginfo(f"Area: {area}, dist: {dist}")
+
+        cv2.imshow("POse", cv_img)
+        cv2.waitKey(1)
 
         self.pose_detect_img = cv_img
+    
+    def all_detect(self, img):
+        #self.hand_detect(img)
+        self.people_detect(img)
+
+        # out = stackImages(1, [self.hand_detect_img, self.pose_detect_img])
+        # cv2.imshow("Image", out)
+        # cv2.waitKey(1)
 
 
     def run(self):
-        rospy.init_node("detector_node", anonymous=True)
+        if self.image_topic == "bebop/image_raw":
+            self.bebop_run()
+        else:
+            self.webcam_run()
+    
+    def bebop_run(self):
+        print("ALou")
+        rospy.Subscriber("bebop/image_raw/compressed", CompressedImage, self.all_detect)
+        rospy.spin()
 
+    def webcam_run(self):
         cap = cv2.VideoCapture(0)
 
         print("Webcam inicada")
@@ -183,8 +220,7 @@ class Detector:
             if not ret:
                 continue
             
-            self.hand_detect(frame)
-            self.people_detect(frame)
+            self.all_detect(frame)
 
             out = stackImages(1, [self.hand_detect_img, self.pose_detect_img])
             cv2.imshow("Image", out)
@@ -195,7 +231,9 @@ class Detector:
 
         cap.release()
         cv2.destroyAllWindows()
+    
 
 if __name__ == '__main__':
     opa = Detector()
-    opa.run()
+    opa.bebop_run()
+
