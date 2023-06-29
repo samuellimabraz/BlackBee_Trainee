@@ -8,16 +8,18 @@ class MyPoseDetector(PoseDetector):
     def __init__(self, mode=False, smooth=True, detectionCon=0.5, trackCon=0.5):
         super().__init__(mode, smooth, detectionCon, trackCon)
 
-    def findArea(self, img):
+    def findArea(self, img, draw=False):
         """
         Realiza a detecção da pessoa e calcula a area de seu tronco
         """
 
         # Processa a imagem e encontra os landmarks
         self.findPose(img, False)
+        
         # Gera lista dos landmarks com suas coordenadas e a bounding box
         lmList, bboxInfo = self.findPosition(img, draw=False, bboxWithHands=False)
 
+        area =  0
         if lmList:
             # Cálculo e exibição da área do contorno formado pelos pontos
             # Ombro, quadril e joelho: [11, 23, 25, 26, 24, 12]
@@ -25,14 +27,14 @@ class MyPoseDetector(PoseDetector):
 
             points = np.array(lmList)[marks, 1:3].astype(int)
 
-            if points.size > 0:
+            if draw:
                 cv2.fillPoly(img, [points], (0, 255, 0))
 
             area = cv2.contourArea(points)
 
-            center = bboxInfo["center"]
+            #center = bboxInfo["center"]
             # cv2.circle(img, center, 5, (255, 0, 255), cv2.FILLED)
-
+            
             cv2.putText(
                 img,
                 f"Area: {area:.2f}",
@@ -43,7 +45,7 @@ class MyPoseDetector(PoseDetector):
                 2,
             )
 
-            return area, center
+        return area
 
 
 def main():
