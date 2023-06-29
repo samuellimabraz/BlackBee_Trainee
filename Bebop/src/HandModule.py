@@ -2,19 +2,19 @@
 
 import cv2
 import numpy as np
+import time
 
 from cvzone.HandTrackingModule import HandDetector
 
 
 class MyHandDetector(HandDetector):
     fingers_gestures = {
-        "TAKEOFF": [0, 1, 0, 0, 0],
-        "WAIT": [1, 1, 1, 1, 1],
-        "RIGHT": [0, 0, 0, 0, 1],
-        "LEFT": [1, 0, 0, 0, 0],
-        "FRONT": [0, 0, 0, 0, 0],
-        "FLIP": [0, 1, 0, 0, 1],
-        "LAND": [0, 1, 1, 0, 0],
+        [0, 1, 0, 0, 0],  # "TAKEOFF"
+        [0, 0, 0, 0, 1],  # "RIGHT"
+        [1, 0, 0, 0, 0],  # "LEFT"
+        [0, 0, 0, 0, 0],  # "FRONT"
+        [0, 1, 0, 0, 1],  # "FLIP"
+        [0, 1, 1, 0, 0],  # "LAND"
     }
 
     def __init__(
@@ -32,30 +32,68 @@ class MyHandDetector(HandDetector):
         """
         super().__init__(mode, maxHands, minDetectionCon, minTrackCon)
 
+        self.hand_previous_pos_x = 0
+        self.recognized_lateral_moviment = False
+        self.right_moviment = self.left_moviment = 0
+        self.start_wave_time = time.time()
+        self.limit_wave_time = 1.0
+
     def gestureRecognizer(self, img, textPoint=(20, 20)):
         """
-        Realiza a detecção da mão em uma área próximo ao rosto,
-        retornando o evento interpretado pelo gesto identificado
-        :param img: Image for detect
-        :param textPoint: point (x, y) for write de event
+        Performs hand detection and
+        return the event interpreted by the identified gesture
+        :param img: Image for detection
+        :param textPoint: point (x, y) for writing the event
         """
 
-        event = "None"
+        event = -1
 
-        # Detecta a mão e identifica o gesto pela posição dos dedos
+        # Detect hand and identify the gesture by finger positions
         hands = self.findHands(img, False)
 
         if hands:
             hand = hands[0]
 
-            # Detecta os dedos levantados ou não
+            # Detect raised fingers, binary list
             fingers = self.fingersUp(hand)
 
-            # Compara com os gestos declarados e gera o evento
-            for ev, gesture in self.fingers_gestures.items():
+            # Compare with declared fingers gestures and generate the event
+            for id, gesture in self.fingers_gestures:
                 if fingers == gesture:
-                    event = ev
+                    event = id
                     break
+
+            # Recognize wave motion
+            # The movement consists of shifting the center of the hand
+            # twice to each side, left and right, with all fingers raised,
+            # within a time limit interval
+            if fingers == [1, 1, 1, 1, 1]:
+                hand_x_center = hand["center"][0]  # cx of the hand
+
+                if hand_x_center < self.hand_previous_pos_x - 24:
+                    self.left_moviment += 1
+                elif hand_x_center > self.hand_previous_pos_x + 24:
+                    self.right_moviment += 1
+
+                if (self.right_moviment == 1 or self.left_moviment == 1) and (
+                    not self.recognized_lateral_moviment
+                ):
+                    self.start_wave_time = time.time()
+                    self.recognized_lateral_moviment = True
+
+                if (self.right_moviment > 1 and self.left_moviment > 1) and (
+                    time.time() - self.start_wave_time <= self.limit_wave_time
+                ):
+                    print(f"Aceno")
+                    event = 6
+                    self.recognized_lateral_moviment = False
+                    self.right_moviment = self.left_moviment = 0
+
+                self.hand_previous_pos_x = hand_x_center
+            else:
+                self.start_wave_time = time.time()
+                self.recognized_lateral_moviment = False
+                self.right_moviment = self.left_moviment = 0
 
         cv2.putText(img, event, textPoint, cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2)
 
@@ -73,7 +111,7 @@ def main():
     )
 
     while True:
-        success, frame = cap.read()
+        _, frame = cap.read()
 
         detector.gestureRecognizer(frame)
 

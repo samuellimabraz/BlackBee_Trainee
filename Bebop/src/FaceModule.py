@@ -6,6 +6,8 @@ import mediapipe as mp
 import math
 
 
+# Face detector using the FaceMesh model by mediapipe
+# Detect face and stipule a distance of the camera with focus distance
 class FaceDetector:
     def __init__(
         self,
@@ -13,6 +15,7 @@ class FaceDetector:
         refine_landmarks=True,
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5,
+        focus_length=1000,
     ):
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
@@ -24,6 +27,8 @@ class FaceDetector:
             min_detection_confidence=min_detection_confidence,
             min_tracking_confidence=min_tracking_confidence,
         )
+
+        self.focus_lenght = focus_length
 
     def detect_face(self, img, draw=False):
         ih, iw, _ = img.shape
@@ -38,7 +43,7 @@ class FaceDetector:
         img.flags.writeable = True
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
-        dist = None
+        dist = -1
         if results.multi_face_landmarks:
             face = results.multi_face_landmarks[0].landmark
 
@@ -47,19 +52,25 @@ class FaceDetector:
 
             w = math.hypot(x2 - x1, y2 - y1)
 
-            W = 6.3
+            W = 6.3  # Real measure, distance of the eyes
 
-            # Finding distance, f = 640
-            dist = (W * 640) / w
+            # # Finding the Focal Length
+            # d = 50
+            # f = (w*d)/W
+            # print(f)
+
+            # Finding distance to the camera, f = 640
+            # focus distance is a property of the camera
+            dist = int((W * self.focus_lenght) / w)
 
             cvzone.putTextRect(
                 img,
-                f"Depth: {int(dist)}cm",
+                f"Depth: {dist}cm",
                 (int(face[10].x * iw) - 100, int(face[10].y * ih) - 50),
                 scale=2,
             )
 
-            # Encontra os índices dos pontos mais periféricos
+            # Find the indices of the peripheral points for the boundig box
             xmin, xmax = int(min(face, key=lambda l: l.x).x * iw), int(
                 max(face, key=lambda l: l.x).x * iw
             )
@@ -67,13 +78,14 @@ class FaceDetector:
                 max(face, key=lambda l: l.y).y * ih
             )
             bbox = [xmin, ymin, xmax - xmin, ymax - ymin]
-            
+
             if draw:
                 self.draw_landmarks(img, results.multi_face_landmarks[0])
 
         return img, bbox, dist
 
     def draw_landmarks(self, img, face_landmarks):
+        # Draw all 470 ladmarks and connections
         self.mp_drawing.draw_landmarks(
             image=img,
             landmark_list=face_landmarks,

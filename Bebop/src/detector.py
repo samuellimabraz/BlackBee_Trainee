@@ -2,6 +2,7 @@
 
 import rospy
 from sensor_msgs.msg import Image, CompressedImage
+from std_msgs.msg import Int16
 from cv_bridge import CvBridge, CvBridgeError
 
 import cv2
@@ -12,7 +13,7 @@ from FaceModule import FaceDetector
 
 import numpy as np
 
-from utils import *
+from Utils import *
 
 
 class Detector(MyHandDetector, FaceDetector):
@@ -26,6 +27,7 @@ class Detector(MyHandDetector, FaceDetector):
         refine_landmarks,
         minFaceDetectionCon,
         minFaceTrackCon,
+        focusLength,
     ):
         MyHandDetector.__init__(
             self,
@@ -36,10 +38,21 @@ class Detector(MyHandDetector, FaceDetector):
             minFaceDetectionCon,
         )
         FaceDetector.__init__(
-            self, maxFaces, refine_landmarks, minFaceDetectionCon, minFaceTrackCon
+            self,
+            maxFaces,
+            refine_landmarks,
+            minFaceDetectionCon,
+            minFaceTrackCon,
+            focus_length=focusLength,
         )
 
         self.bridge = CvBridge()
+
+        self.gesture_event = Int16()
+        self.gesture_event_pub = rospy.Publisher("hands_action", Int16, queue_size=1)
+
+        self.face_depth = Int16()
+        self.depth_pub = rospy.Publisher("face_depth", Int16, queue_size=1)
 
     def detect(self, img):
         if self.image_topic == "bebop":
@@ -52,14 +65,18 @@ class Detector(MyHandDetector, FaceDetector):
         img = cropImage(img, 0.15, 0.3)
 
         img, bbox, dist = self.detect_face(img, False)
+        self.face_depth = dist
+        self.depth_pub.publish(self.face_depth)
 
-        if dist is not None:
+        if dist > 0:
             # Area de reconhecimento para as mãos
             x, y, w, h = bbox[0] - 220, bbox[1], bbox[2] + 80, bbox[3] + 70
             imgDetect = img[y : (y + h), x : (x + w)]
 
             cvzone.cornerRect(img, [x, y, w, h])
-            event = self.gestureRecognizer(imgDetect, (20, 20))
+
+            self.gesture_event = self.gestureRecognizer(imgDetect, (20, 20))
+            self.gesture_event_pub.publish(self.gesture_event)
 
         cv2.imshow("Detect", img)
 
@@ -106,6 +123,7 @@ def main():
         refine_landmarks=True,
         minFaceDetectionCon=0.8,
         minFaceTrackCon=0.8,
+        focusLength=640,
     )
     opa.run()
 
