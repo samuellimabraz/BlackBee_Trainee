@@ -1,8 +1,11 @@
+
 #!/usr/bin/env python
 
 import cv2
 import numpy as np
 
+from cvzone.HandTrackingModule import HandDetector
+from mediapipe.python.solutions.drawing_utils import DrawingSpec
 
 def cropImage(img, hcrop, wcrop):
     height = (

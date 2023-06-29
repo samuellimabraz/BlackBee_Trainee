@@ -5,11 +5,11 @@ from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
 
 import cv2
-
 import cvzone
 
 from HandModule import MyHandDetector
 from PoseModule import MyPoseDetector
+
 
 import numpy as np
 
@@ -46,7 +46,7 @@ class Detector(MyHandDetector, MyPoseDetector):
             except CvBridgeError as e:
                 print(e)
 
-        # (480, 856, 3)
+        # Bebop: (480, 856, 3)
         img = cropImage(img, 0.15, 0.3)
 
         self.findArea(img)
@@ -66,7 +66,7 @@ class Detector(MyHandDetector, MyPoseDetector):
 
     def webcam_run(self):
         cap = cv2.VideoCapture(0)
-
+        
         while not rospy.is_shutdown():
             ret, frame = cap.read()
 
