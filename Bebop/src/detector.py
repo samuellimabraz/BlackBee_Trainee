@@ -8,24 +8,24 @@ import cv2
 import cvzone
 
 from HandModule import MyHandDetector
-from PoseModule import MyPoseDetector
-
+from FaceModule import FaceDetector
 
 import numpy as np
 
 from utils import *
 
 
-class Detector(MyHandDetector, MyPoseDetector):
+class Detector(MyHandDetector, FaceDetector):
     def __init__(
         self,
         mode,
         maxHands,
         minHandDetectionCon,
         minHandTrackCon,
+        maxFaces,
+        refine_landmarks,
         minFaceDetectionCon,
-        minPoseDetectionCon,
-        minPoseTrackCon,
+        minFaceTrackCon,
     ):
         MyHandDetector.__init__(
             self,
@@ -35,7 +35,9 @@ class Detector(MyHandDetector, MyPoseDetector):
             minHandTrackCon,
             minFaceDetectionCon,
         )
-        MyPoseDetector.__init__(self, mode, True, minPoseDetectionCon, minPoseTrackCon)
+        FaceDetector.__init__(
+            self, maxFaces, refine_landmarks, minFaceDetectionCon, minFaceTrackCon
+        )
 
         self.bridge = CvBridge()
 
@@ -46,14 +48,19 @@ class Detector(MyHandDetector, MyPoseDetector):
             except CvBridgeError as e:
                 print(e)
 
-        # Bebop: (480, 856, 3)
+        # Bebop: (480, 856, 3), Webcam: (480, 640, 3)
         img = cropImage(img, 0.15, 0.3)
 
-        self.findArea(img)
-        self.gestureRecognizer(img)
+        img, bbox, dist = self.detect_face(img, False)
 
-        #out = cvzone.stackImages([self.hand_detect_img, self.pose_detect_img], 2, 1)
-        
+        if dist is not None:
+            # Area de reconhecimento para as mãos
+            x, y, w, h = bbox[0] - 220, bbox[1], bbox[2] + 80, bbox[3] + 70
+            imgDetect = img[y : (y + h), x : (x + w)]
+
+            cvzone.cornerRect(img, [x, y, w, h])
+            event = self.gestureRecognizer(imgDetect, (20, 20))
+
         cv2.imshow("Detect", img)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -66,7 +73,7 @@ class Detector(MyHandDetector, MyPoseDetector):
 
     def webcam_run(self):
         cap = cv2.VideoCapture(0)
-        
+
         while not rospy.is_shutdown():
             ret, frame = cap.read()
 
@@ -88,15 +95,17 @@ class Detector(MyHandDetector, MyPoseDetector):
         elif self.image_topic == "webcam":
             self.webcam_run()
 
+
 def main():
     opa = Detector(
         mode=False,
         maxHands=1,
         minHandDetectionCon=0.85,
         minHandTrackCon=0.8,
-        minFaceDetectionCon=0.72,
-        minPoseDetectionCon=0.8,
-        minPoseTrackCon=0.8
+        maxFaces=1,
+        refine_landmarks=True,
+        minFaceDetectionCon=0.8,
+        minFaceTrackCon=0.8,
     )
     opa.run()
 
