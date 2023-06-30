@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from std_msgs.msg import Empty, UInt8, Float32, Bool
+from std_msgs.msg import Empty, UInt8, Int16
 from geometry_msgs.msg import Twist
 
 from threading import Timer
@@ -17,26 +17,29 @@ class Controller:
         self.vel_pub = rospy.Publisher("/bebop/cmd_vel", Twist, queue_size=1)
         self.flip_pub = rospy.Publisher("/bebop/flip", UInt8, queue_size=1)
 
-        self.current_hand_event = None
+        self.current_hand_event = -2
         self.timer = None
 
-    def face_follower(self):
-        pass
+    def face_follower(self, event):
+        if event.data != 0:
+            rospy.loginfo(f"Face event: {event.data}")
 
     def hand_callback(self, event):
+        #rospy.loginfo(f"Hand event: {event.data}")
         if self.current_hand_event != event.data:
             # Novo evento detectado, cancela temporizador anterior (se houver)
             if self.timer is not None:
                 self.timer.cancel()
-            else:
-                self.timer = Timer(2.0, self.perform_action)
 
-            self.timer.start()
+            if event.data != -1:
+                self.timer = Timer(2.0, self.perform_hand_action)
+                self.timer.start()
 
         self.current_hand_event = event.data
 
     def perform_hand_action(self):
         # Executa a ação com base no evento atual
+        rospy.loginfo(f"Hand event: {self.current_hand_event}")
         if (self.current_hand_event == 0) and (not self.drone.flying):
             self.drone.takeoff()
             rospy.sleep(3)
@@ -55,8 +58,8 @@ class Controller:
 
     def start(self):
         rospy.init_node("controller_node", anonymous=True)
-        rospy.Subscriber("hand_event", UInt8, self.hand_callback)
-        rospy.Subscriber("face_event", UInt8)
+        rospy.Subscriber("hand_event", Int16, self.hand_callback)
+        rospy.Subscriber("face_event", UInt8, self.face_follower)
         rospy.spin()
 
 
@@ -66,7 +69,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except rospy.ROSInterruptException:
+        pass
 
 # # Parâmetros do controle PID
 # Kp_linear = 0.00004  # Constante proporcional do controle PID para linear.x

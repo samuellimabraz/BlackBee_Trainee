@@ -9,7 +9,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 
-detector = FaceMeshDetector(maxFaces=1, minDetectionCon=0.75, minTrackCon=0.6)
+detector = FaceMeshDetector(maxFaces=1, minDetectionCon=0.5, minTrackCon=0.6)
 
 
 def findFocus(img):
@@ -33,7 +33,7 @@ def findFocus(img):
         # print(f)
 
         # Finding distance
-        f = 550
+        f = 650
         d = (W * f) / w
         print(d)
 
@@ -73,5 +73,6 @@ def bebop_main():
 
 
 if __name__ == "__main__":
-    rospy.init_node("focus_node", anonymous=True)
-    bebop_main()
+    # rospy.init_node("focus_node", anonymous=True)
+    # bebop_main()
+    webcam_main()

@@ -1,0 +1,10 @@
+<launch>
+  <arg name="image_topic" default="webcam" />
+
+  <node name="detect_node" pkg="watchdog" type="detector.py" output="screen">
+    <param name="image_topic" value="$(arg image_topic)" />
+  </node>
+  
+  <node name="controller_node" pkg="watchdog" type="Control.py" output="screen"/>
+</launch>
+

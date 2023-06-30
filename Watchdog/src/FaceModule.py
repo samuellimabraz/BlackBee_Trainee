@@ -5,10 +5,7 @@ import cvzone
 import mediapipe as mp
 import math
 
-frameHeight = 416
-frameWidth = 554
 deadZone = 95
-
 
 # Face detector using the FaceMesh model by mediapipe
 # Detect face and stipule a distance of the camera with focus distance
@@ -48,11 +45,13 @@ class FaceDetector:
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
         dist = 0
-        bbox = []
+        bbox = 0
         event = 0
         if results.multi_face_landmarks:
             face = results.multi_face_landmarks[0].landmark
 
+            # Calculete de distance of the people, 
+            # with the distance of the eyes landmarks
             x1, y1 = (face[145].x * iw, face[145].y * ih)
             x2, y2 = (face[374].x * iw, face[374].y * ih)
 
@@ -79,7 +78,7 @@ class FaceDetector:
 
             cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
 
-            if cx < frameWidth // 2 - deadZone:
+            if cx < iw // 2 - deadZone:
                 event = 1
                 cv2.putText(
                     img,
@@ -90,14 +89,14 @@ class FaceDetector:
                     (0, 0, 255),
                     3,
                 )
-                cv2.rectangle(
-                    img,
-                    (0, int(frameHeight / 2 - deadZone)),
-                    (int(frameWidth / 2) - deadZone, int(frameHeight / 2) + deadZone),
-                    (0, 0, 255),
-                    cv2.FILLED,
-                )
-            elif cx > int(frameWidth / 2) + deadZone:
+                # cv2.rectangle(
+                #     img,
+                #     (0, int(ih / 2 - deadZone)),
+                #     (int(iw / 2) - deadZone, int(ih / 2) + deadZone),
+                #     (0, 0, 255),
+                #     cv2.FILLED,
+                # )
+            elif cx > int(iw / 2) + deadZone:
                 event = 2
                 cv2.putText(
                     img,
@@ -108,14 +107,14 @@ class FaceDetector:
                     (0, 0, 255),
                     3,
                 )
-                cv2.rectangle(
-                    img,
-                    (int(frameWidth / 2 + deadZone), int(frameHeight / 2 - deadZone)),
-                    (frameWidth, int(frameHeight / 2) + deadZone),
-                    (0, 0, 255),
-                    cv2.FILLED,
-                )
-            elif cy < int(frameHeight / 2) - deadZone:
+                # cv2.rectangle(
+                #     img,
+                #     (int(iw / 2 + deadZone), int(ih / 2 - deadZone)),
+                #     (iw, int(ih / 2) + deadZone),
+                #     (0, 0, 255),
+                #     cv2.FILLED,
+                # )
+            elif cy < int(ih / 2) - deadZone:
                 event = 3
                 cv2.putText(
                     img,
@@ -126,14 +125,14 @@ class FaceDetector:
                     (0, 0, 255),
                     3,
                 )
-                cv2.rectangle(
-                    img,
-                    (int(frameWidth / 2 - deadZone), 0),
-                    (int(frameWidth / 2 + deadZone), int(frameHeight / 2) - deadZone),
-                    (0, 0, 255),
-                    cv2.FILLED,
-                )
-            elif cy > int(frameHeight / 2) + deadZone:
+                # cv2.rectangle(
+                #     img,
+                #     (int(iw / 2 - deadZone), 0),
+                #     (int(iw / 2 + deadZone), int(ih / 2) - deadZone),
+                #     (0, 0, 255),
+                #     cv2.FILLED,
+                # )
+            elif cy > int(ih / 2) + deadZone:
                 event = 4
                 cv2.putText(
                     img,
@@ -144,17 +143,17 @@ class FaceDetector:
                     (0, 0, 255),
                     3,
                 )
-                cv2.rectangle(
-                    img,
-                    (int(frameWidth / 2 - deadZone), int(frameHeight / 2) + deadZone),
-                    (int(frameWidth / 2 + deadZone), frameHeight),
-                    (0, 0, 255),
-                    cv2.FILLED,
-                )
+                # cv2.rectangle(
+                #     img,
+                #     (int(iw / 2 - deadZone), int(ih / 2) + deadZone),
+                #     (int(iw / 2 + deadZone), ih),
+                #     (0, 0, 255),
+                #     cv2.FILLED,
+                # )
 
             cv2.line(
                 img,
-                (int(frameWidth / 2), int(frameHeight / 2)),
+                (int(iw / 2), int(ih / 2)),
                 (cx, cy),
                 (0, 0, 255),
                 3,
@@ -162,29 +161,29 @@ class FaceDetector:
 
             cv2.line(
                 img,
-                (int(frameWidth / 2) - deadZone, 0),
-                (int(frameWidth / 2) - deadZone, frameHeight),
+                (int(iw / 2) - deadZone, 0),
+                (int(iw / 2) - deadZone, ih),
                 (255, 255, 0),
                 3,
             )
             cv2.line(
                 img,
-                (int(frameWidth / 2) + deadZone, 0),
-                (int(frameWidth / 2) + deadZone, frameHeight),
+                (int(iw / 2) + deadZone, 0),
+                (int(iw / 2) + deadZone, ih),
                 (255, 255, 0),
                 3,
             )
             cv2.line(
                 img,
-                (0, int(frameHeight / 2) - deadZone),
-                (frameWidth, int(frameHeight / 2) - deadZone),
+                (0, int(ih / 2) - deadZone),
+                (iw, int(ih / 2) - deadZone),
                 (255, 255, 0),
                 3,
             )
             cv2.line(
                 img,
-                (0, int(frameHeight / 2) + deadZone),
-                (frameWidth, int(frameHeight / 2) + deadZone),
+                (0, int(ih / 2) + deadZone),
+                (iw, int(ih / 2) + deadZone),
                 (255, 255, 0),
                 3,
             )
@@ -245,8 +244,8 @@ def main():
 
     while cap.isOpened():
         success, frame = cap.read()
-
-        frame = cv2.resize(frame, (frameWidth, frameHeight))
+        iw, ih, _ = frame.shape
+        frame = cv2.resize(frame, (iw, ih))
 
         if not success:
             continue
