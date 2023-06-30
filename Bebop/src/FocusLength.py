@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import cv2
 import cvzone
 from cvzone.FaceMeshModule import FaceMeshDetector
@@ -5,6 +7,7 @@ from cvzone.FaceMeshModule import FaceMeshDetector
 import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
+
 
 detector = FaceMeshDetector(maxFaces=1, minDetectionCon=0.75, minTrackCon=0.6)
 
@@ -25,14 +28,14 @@ def findFocus(img):
         W = 6.3  # real distance between the reference object
 
         # # Finding the Focal Length
-        d = 100  # real distance to the camera
-        f = (w * d) / W
-        print(f)
+        # d = 100  # real distance to the camera
+        # f = (w * d) / W
+        # print(f)
 
         # Finding distance
-        # f = 840
-        # d = (W * f) / w
-        # print(d)
+        f = 550
+        d = (W * f) / w
+        print(d)
 
         cvzone.putTextRect(
             img, f"Depth: {int(d)}cm", (face[10][0] - 100, face[10][1] - 50), scale=2
@@ -61,6 +64,8 @@ def callback(img):
 
     findFocus(img)
 
+    cv2.imshow("Image", img)
+    cv2.waitKey(1)
 
 def bebop_main():
     rospy.Subscriber("bebop/image_raw", Image, callback, queue_size=1)
@@ -68,4 +73,5 @@ def bebop_main():
 
 
 if __name__ == "__main__":
+    rospy.init_node("focus_node", anonymous=True)
     bebop_main()
