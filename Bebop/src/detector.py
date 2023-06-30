@@ -13,7 +13,7 @@ from FaceModule import FaceDetector
 
 import numpy as np
 
-from Utils import *
+from utils import *
 
 
 class Detector(MyHandDetector, FaceDetector):
@@ -47,10 +47,11 @@ class Detector(MyHandDetector, FaceDetector):
 
         self.bridge = CvBridge()
 
-        self.gesture_event = UInt8()
-        self.gesture_event_pub = rospy.Publisher("hand_event", UInt8, queue_size=1)
+        self.gesture_event = Int16()
+        self.gesture_event_pub = rospy.Publisher("hand_event", Int16, queue_size=1)
 
-        self.face_depth = Int16()
+        self.face_depth = Int16(0)
+
         self.depth_pub = rospy.Publisher("face_depth", Int16, queue_size=1)
 
         self.face_event = UInt8()
@@ -64,8 +65,8 @@ class Detector(MyHandDetector, FaceDetector):
                 print(e)
 
         # Bebop: (480, 856, 3), Webcam: (480, 640, 3)
-        # img = cropImage(img, 0.0, 0.36)
-        img = cv2.resize(img, (320, 320))
+        #img = cropImage(img, 0.0, 0.252)
+        #img = cv2.resize(img, (640, 480))
 
         # Face detection, return the depth dist, and movient event
         img, bbox, self.face_depth, self.face_event = self.detect_face(img, False)
@@ -74,15 +75,21 @@ class Detector(MyHandDetector, FaceDetector):
         self.face_event_pub.publish(self.face_event)
 
         # Hand detection, recognize gestures in an area close to the face
-        if self.face_depth > 0:
+        if bbox:
             # Area for detection
-            x, y, w, h = bbox[0] - 220, bbox[1], bbox[2] + 80, bbox[3] + 70
+            x, y, w, h = (
+                abs(bbox[0] - 220),
+                abs(bbox[1]),
+                abs(bbox[2] + 80),
+                abs(bbox[3] + 70),
+            )
             imgDetect = img[y : (y + h), x : (x + w)]
 
             cvzone.cornerRect(img, [x, y, w, h])
 
             self.gesture_event = self.gestureRecognizer(imgDetect, (20, 20))
             self.gesture_event_pub.publish(self.gesture_event)
+    
 
         cv2.imshow("Detect", img)
 
@@ -106,6 +113,7 @@ class Detector(MyHandDetector, FaceDetector):
             self.detect(frame)
 
         cap.release()
+        cv2.destroyAllWindows()
 
     def run(self):
         rospy.init_node("detector_node", anonymous=True)
@@ -123,12 +131,12 @@ def main():
     opa = Detector(
         mode=False,
         maxHands=1,
-        minHandDetectionCon=0.85,
-        minHandTrackCon=0.8,
+        minHandDetectionCon=0.6,
+        minHandTrackCon=0.5,
         maxFaces=1,
         refine_landmarks=True,
-        minFaceDetectionCon=0.8,
-        minFaceTrackCon=0.8,
+        minFaceDetectionCon=0.5,
+        minFaceTrackCon=0.6,
         focusLength=640,
     )
     opa.run()
