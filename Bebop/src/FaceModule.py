@@ -44,6 +44,7 @@ class FaceDetector:
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
         dist = -1
+        bbox = []
         if results.multi_face_landmarks:
             face = results.multi_face_landmarks[0].landmark
 
@@ -54,10 +55,6 @@ class FaceDetector:
 
             W = 6.3  # Real measure, distance of the eyes
 
-            # # Finding the Focal Length
-            # d = 50
-            # f = (w*d)/W
-            # print(f)
 
             # Finding distance to the camera, f = 640
             # focus distance is a property of the camera
