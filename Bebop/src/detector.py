@@ -35,7 +35,6 @@ class Detector(MyHandDetector, FaceDetector):
             maxHands,
             minHandDetectionCon,
             minHandTrackCon,
-            minFaceDetectionCon,
         )
         FaceDetector.__init__(
             self,
@@ -104,7 +103,7 @@ class Detector(MyHandDetector, FaceDetector):
     def run(self):
         rospy.init_node("detector_node", anonymous=True)
 
-        self.image_topic = rospy.get_param("~image_topic", "webcam_image")
+        self.image_topic = rospy.get_param("~image_topic", "webcam")
         print(f"Captura: {self.image_topic}")
 
         if self.image_topic == "bebop":
