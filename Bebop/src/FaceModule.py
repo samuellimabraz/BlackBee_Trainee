@@ -5,9 +5,10 @@ import cvzone
 import mediapipe as mp
 import math
 
-frameHeight = 480
-frameWidth = 640
-deadZone = 100
+frameHeight = 416
+frameWidth = 554
+deadZone = 95
+
 
 # Face detector using the FaceMesh model by mediapipe
 # Detect face and stipule a distance of the camera with focus distance
@@ -46,7 +47,7 @@ class FaceDetector:
         img.flags.writeable = True
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
-        dist = -1
+        dist = 0
         bbox = []
         event = 0
         if results.multi_face_landmarks:
@@ -70,38 +71,123 @@ class FaceDetector:
                 scale=2,
             )
 
-            # Creates a mesh and checks if the central point, the nose's landmark, 
-            # is within the central zone. 
+            # Creates a mesh and checks if the central point, the nose's landmark,
+            # is within the central zone.
             # Generating events so that the camera
             # is centered with the face
             cx, cy = int(face[1].x * iw), int(face[1].y * ih)
 
             cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
 
-            if (cx < frameWidth//2 - deadZone):
+            if cx < frameWidth // 2 - deadZone:
                 event = 1
-                cv2.putText(img, " GO LEFT " , (20, 50), cv2.FONT_HERSHEY_COMPLEX,1,(0, 0, 255), 3)
-                cv2.rectangle(img,(0,int(frameHeight/2-deadZone)),(int(frameWidth/2)-deadZone,int(frameHeight/2)+deadZone),(0,0,255),cv2.FILLED)
-            elif (cx > int(frameWidth / 2) + deadZone):
+                cv2.putText(
+                    img,
+                    " GO LEFT ",
+                    (20, 50),
+                    cv2.FONT_HERSHEY_COMPLEX,
+                    1,
+                    (0, 0, 255),
+                    3,
+                )
+                cv2.rectangle(
+                    img,
+                    (0, int(frameHeight / 2 - deadZone)),
+                    (int(frameWidth / 2) - deadZone, int(frameHeight / 2) + deadZone),
+                    (0, 0, 255),
+                    cv2.FILLED,
+                )
+            elif cx > int(frameWidth / 2) + deadZone:
                 event = 2
-                cv2.putText(img, " GO RIGHT ", (20, 50), cv2.FONT_HERSHEY_COMPLEX,1,(0, 0, 255), 3)
-                cv2.rectangle(img,(int(frameWidth/2+deadZone),int(frameHeight/2-deadZone)),(frameWidth,int(frameHeight/2)+deadZone),(0,0,255),cv2.FILLED)
-            elif (cy < int(frameHeight / 2) - deadZone):
+                cv2.putText(
+                    img,
+                    " GO RIGHT ",
+                    (20, 50),
+                    cv2.FONT_HERSHEY_COMPLEX,
+                    1,
+                    (0, 0, 255),
+                    3,
+                )
+                cv2.rectangle(
+                    img,
+                    (int(frameWidth / 2 + deadZone), int(frameHeight / 2 - deadZone)),
+                    (frameWidth, int(frameHeight / 2) + deadZone),
+                    (0, 0, 255),
+                    cv2.FILLED,
+                )
+            elif cy < int(frameHeight / 2) - deadZone:
                 event = 3
-                cv2.putText(img, " GO UP ", (20, 50), cv2.FONT_HERSHEY_COMPLEX,1,(0, 0, 255), 3)
-                cv2.rectangle(img,(int(frameWidth/2-deadZone),0),(int(frameWidth/2+deadZone),int(frameHeight/2)-deadZone),(0,0,255),cv2.FILLED)
-            elif (cy > int(frameHeight / 2) + deadZone):
+                cv2.putText(
+                    img,
+                    " GO UP ",
+                    (20, 50),
+                    cv2.FONT_HERSHEY_COMPLEX,
+                    1,
+                    (0, 0, 255),
+                    3,
+                )
+                cv2.rectangle(
+                    img,
+                    (int(frameWidth / 2 - deadZone), 0),
+                    (int(frameWidth / 2 + deadZone), int(frameHeight / 2) - deadZone),
+                    (0, 0, 255),
+                    cv2.FILLED,
+                )
+            elif cy > int(frameHeight / 2) + deadZone:
                 event = 4
-                cv2.putText(img, " GO DOWN ", (20, 50), cv2.FONT_HERSHEY_COMPLEX, 1,(0, 0, 255), 3)
-                cv2.rectangle(img,(int(frameWidth/2-deadZone),int(frameHeight/2)+deadZone),(int(frameWidth/2+deadZone),frameHeight),(0,0,255),cv2.FILLED)
+                cv2.putText(
+                    img,
+                    " GO DOWN ",
+                    (20, 50),
+                    cv2.FONT_HERSHEY_COMPLEX,
+                    1,
+                    (0, 0, 255),
+                    3,
+                )
+                cv2.rectangle(
+                    img,
+                    (int(frameWidth / 2 - deadZone), int(frameHeight / 2) + deadZone),
+                    (int(frameWidth / 2 + deadZone), frameHeight),
+                    (0, 0, 255),
+                    cv2.FILLED,
+                )
 
-            cv2.line(img, (int(frameWidth/2),int(frameHeight/2)), (cx,cy),(0, 0, 255), 3)
-            
-            cv2.line(img,(int(frameWidth/2)-deadZone,0),(int(frameWidth/2)-deadZone,frameHeight),(255,255,0),3)
-            cv2.line(img,(int(frameWidth/2)+deadZone,0),(int(frameWidth/2)+deadZone,frameHeight),(255,255,0),3)
-            cv2.line(img, (0,int(frameHeight / 2) - deadZone), (frameWidth,int(frameHeight / 2) - deadZone), (255, 255, 0), 3)
-            cv2.line(img, (0, int(frameHeight / 2) + deadZone), (frameWidth, int(frameHeight / 2) + deadZone), (255, 255, 0), 3)
-            
+            cv2.line(
+                img,
+                (int(frameWidth / 2), int(frameHeight / 2)),
+                (cx, cy),
+                (0, 0, 255),
+                3,
+            )
+
+            cv2.line(
+                img,
+                (int(frameWidth / 2) - deadZone, 0),
+                (int(frameWidth / 2) - deadZone, frameHeight),
+                (255, 255, 0),
+                3,
+            )
+            cv2.line(
+                img,
+                (int(frameWidth / 2) + deadZone, 0),
+                (int(frameWidth / 2) + deadZone, frameHeight),
+                (255, 255, 0),
+                3,
+            )
+            cv2.line(
+                img,
+                (0, int(frameHeight / 2) - deadZone),
+                (frameWidth, int(frameHeight / 2) - deadZone),
+                (255, 255, 0),
+                3,
+            )
+            cv2.line(
+                img,
+                (0, int(frameHeight / 2) + deadZone),
+                (frameWidth, int(frameHeight / 2) + deadZone),
+                (255, 255, 0),
+                3,
+            )
 
             # Find the indices of the peripheral points for the boundig box
             xmin, xmax = int(min(face, key=lambda l: l.x).x * iw), int(
@@ -141,47 +227,52 @@ class FaceDetector:
             connection_drawing_spec=self.mp_drawing_styles.get_default_face_mesh_iris_connections_style(),
         )
 
+
 from HandModule import MyHandDetector
+
 
 def main():
     facedetector = FaceDetector(
-        max_num_faces=1, 
-        refine_landmarks=False, 
-        min_detection_confidence=0.8, 
+        max_num_faces=1,
+        refine_landmarks=False,
+        min_detection_confidence=0.8,
         min_tracking_confidence=0.8,
-        focus_length=640
+        focus_length=640,
     )
-    handdetector = MyHandDetector(
-        False,
-        1,
-        0.70,
-        0.7
-    )
+    handdetector = MyHandDetector(False, 1, 0.70, 0.7)
 
     cap = cv2.VideoCapture(0)
 
     while cap.isOpened():
         success, frame = cap.read()
 
+        frame = cv2.resize(frame, (frameWidth, frameHeight))
+
         if not success:
             continue
 
         frame, bbox, dist, event = facedetector.detect_face(frame, False)
-        
-        # if dist > 0:
-        #     # Area de reconhecimento para as mãos
-        #     x, y, w, h = abs(bbox[0] - 220), abs(bbox[1]), abs(bbox[2] + 80), abs(bbox[3] + 70)
-        #     imgDetect = frame[y : (y + h), x: (x + w)]
-        #     cvzone.cornerRect(frame, [x, y, w, h])
-        #     event = handdetector.gestureRecognizer(imgDetect, (20, 20))
-        
-        cv2.imshow('MediaPipe Face Mesh', frame)
 
-        if cv2.waitKey(2) & 0xFF == ord('q'):
+        if dist > 0:
+            # Area de reconhecimento para as mãos
+            x, y, w, h = (
+                abs(bbox[0] - 220),
+                abs(bbox[1]),
+                abs(bbox[2] + 80),
+                abs(bbox[3] + 70),
+            )
+            imgDetect = frame[y : (y + h), x : (x + w)]
+            cvzone.cornerRect(frame, [x, y, w, h])
+            event = handdetector.gestureRecognizer(imgDetect, (20, 20))
+
+        cv2.imshow("MediaPipe Face Mesh", frame)
+
+        if cv2.waitKey(2) & 0xFF == ord("q"):
             break
 
     cap.release()
     cv2.destroyAllWindows()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

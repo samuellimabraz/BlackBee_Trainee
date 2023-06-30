@@ -2,7 +2,7 @@
 
 import rospy
 from sensor_msgs.msg import Image, CompressedImage
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16, UInt8
 from cv_bridge import CvBridge, CvBridgeError
 
 import cv2
@@ -47,11 +47,14 @@ class Detector(MyHandDetector, FaceDetector):
 
         self.bridge = CvBridge()
 
-        self.gesture_event = Int16()
-        self.gesture_event_pub = rospy.Publisher("hands_action", Int16, queue_size=1)
+        self.gesture_event = UInt8()
+        self.gesture_event_pub = rospy.Publisher("hand_event", UInt8, queue_size=1)
 
         self.face_depth = Int16()
         self.depth_pub = rospy.Publisher("face_depth", Int16, queue_size=1)
+
+        self.face_event = UInt8()
+        self.face_event_pub = rospy.Publisher("face_event", UInt8, queue_size=1)
 
     def detect(self, img):
         if self.image_topic == "bebop":
@@ -61,14 +64,18 @@ class Detector(MyHandDetector, FaceDetector):
                 print(e)
 
         # Bebop: (480, 856, 3), Webcam: (480, 640, 3)
-        img = cropImage(img, 0.15, 0.3)
+        # img = cropImage(img, 0.0, 0.36)
+        img = cv2.resize(img, (320, 320))
 
-        img, bbox, dist = self.detect_face(img, False)
-        self.face_depth = dist
+        # Face detection, return the depth dist, and movient event
+        img, bbox, self.face_depth, self.face_event = self.detect_face(img, False)
+
         self.depth_pub.publish(self.face_depth)
+        self.face_event_pub.publish(self.face_event)
 
-        if dist > 0:
-            # Area de reconhecimento para as mãos
+        # Hand detection, recognize gestures in an area close to the face
+        if self.face_depth > 0:
+            # Area for detection
             x, y, w, h = bbox[0] - 220, bbox[1], bbox[2] + 80, bbox[3] + 70
             imgDetect = img[y : (y + h), x : (x + w)]
 

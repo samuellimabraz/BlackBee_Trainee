@@ -95,7 +95,7 @@ class MyHandDetector(HandDetector):
                 self.recognized_lateral_moviment = False
                 self.right_moviment = self.left_moviment = 0
 
-        cv2.putText(img, event, textPoint, cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2)
+        cv2.putText(img, str(event), textPoint, cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2)
 
         return event
 
