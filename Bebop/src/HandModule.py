@@ -8,14 +8,14 @@ from cvzone.HandTrackingModule import HandDetector
 
 
 class MyHandDetector(HandDetector):
-    fingers_gestures = {
+    fingers_gestures = [
         [0, 1, 0, 0, 0],  # "TAKEOFF"
         [0, 0, 0, 0, 1],  # "RIGHT"
         [1, 0, 0, 0, 0],  # "LEFT"
         [0, 0, 0, 0, 0],  # "FRONT"
         [0, 1, 0, 0, 1],  # "FLIP"
         [0, 1, 1, 0, 0],  # "LAND"
-    }
+    ]
 
     def __init__(
         self,
@@ -58,7 +58,7 @@ class MyHandDetector(HandDetector):
             fingers = self.fingersUp(hand)
 
             # Compare with declared fingers gestures and generate the event
-            for id, gesture in self.fingers_gestures:
+            for id, gesture in enumerate(self.fingers_gestures):
                 if fingers == gesture:
                     event = id
                     break
