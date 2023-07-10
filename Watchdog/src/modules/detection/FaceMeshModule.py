@@ -5,18 +5,21 @@ import cvzone
 import mediapipe as mp
 import math
 
-deadZone = 95
 
-# Face detector using the FaceMesh model by mediapipe
-# Detect face and stipule a distance of the camera with focus distance
-class FaceDetector:
+# This model generate 470 3D landmarks, is best for precision and control
+class FaceMeshDetector:
+    """
+    Face detector using the FaceMesh model by mediapipe
+    Detect face and stipule a distance of the camera with focus distance
+    and the eyes real distance
+    """
+
     def __init__(
         self,
         max_num_faces=1,
         refine_landmarks=True,
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5,
-        focus_length=1000,
     ):
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
@@ -29,9 +32,7 @@ class FaceDetector:
             min_tracking_confidence=min_tracking_confidence,
         )
 
-        self.focus_lenght = focus_length
-
-    def detect_face(self, img, draw=False):
+    def detect_face(self, img, focus_length, dead_zone, draw=False):
         ih, iw, _ = img.shape
 
         # To improve performance, optionally mark the image as not writeable to
@@ -45,12 +46,12 @@ class FaceDetector:
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
         dist = 0
-        bbox = 0
+        bbox = []
         event = 0
         if results.multi_face_landmarks:
             face = results.multi_face_landmarks[0].landmark
 
-            # Calculete de distance of the people, 
+            # Calculete de distance of the people,
             # with the distance of the eyes landmarks
             x1, y1 = (face[145].x * iw, face[145].y * ih)
             x2, y2 = (face[374].x * iw, face[374].y * ih)
@@ -61,7 +62,7 @@ class FaceDetector:
 
             # Finding distance to the camera, f = 640
             # focus distance is a property of the camera
-            dist = int((W * self.focus_lenght) / w)
+            dist = int((W * focus_length) / w)
 
             cvzone.putTextRect(
                 img,
@@ -78,7 +79,7 @@ class FaceDetector:
 
             cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
 
-            if cx < iw // 2 - deadZone:
+            if cx < iw // 2 - dead_zone:
                 event = 1
                 cv2.putText(
                     img,
@@ -96,7 +97,7 @@ class FaceDetector:
                 #     (0, 0, 255),
                 #     cv2.FILLED,
                 # )
-            elif cx > int(iw / 2) + deadZone:
+            elif cx > int(iw / 2) + dead_zone:
                 event = 2
                 cv2.putText(
                     img,
@@ -114,7 +115,7 @@ class FaceDetector:
                 #     (0, 0, 255),
                 #     cv2.FILLED,
                 # )
-            elif cy < int(ih / 2) - deadZone:
+            elif cy < int(ih / 2) - dead_zone:
                 event = 3
                 cv2.putText(
                     img,
@@ -132,7 +133,7 @@ class FaceDetector:
                 #     (0, 0, 255),
                 #     cv2.FILLED,
                 # )
-            elif cy > int(ih / 2) + deadZone:
+            elif cy > int(ih / 2) + dead_zone:
                 event = 4
                 cv2.putText(
                     img,
@@ -161,41 +162,41 @@ class FaceDetector:
 
             cv2.line(
                 img,
-                (int(iw / 2) - deadZone, 0),
-                (int(iw / 2) - deadZone, ih),
+                (int(iw / 2) - dead_zone, 0),
+                (int(iw / 2) - dead_zone, ih),
                 (255, 255, 0),
                 3,
             )
             cv2.line(
                 img,
-                (int(iw / 2) + deadZone, 0),
-                (int(iw / 2) + deadZone, ih),
+                (int(iw / 2) + dead_zone, 0),
+                (int(iw / 2) + dead_zone, ih),
                 (255, 255, 0),
                 3,
             )
             cv2.line(
                 img,
-                (0, int(ih / 2) - deadZone),
-                (iw, int(ih / 2) - deadZone),
+                (0, int(ih / 2) - dead_zone),
+                (iw, int(ih / 2) - dead_zone),
                 (255, 255, 0),
                 3,
             )
             cv2.line(
                 img,
-                (0, int(ih / 2) + deadZone),
-                (iw, int(ih / 2) + deadZone),
+                (0, int(ih / 2) + dead_zone),
+                (iw, int(ih / 2) + dead_zone),
                 (255, 255, 0),
                 3,
             )
 
             # Find the indices of the peripheral points for the boundig box
-            xmin, xmax = int(min(face, key=lambda l: l.x).x * iw), int(
-                max(face, key=lambda l: l.x).x * iw
-            )
-            ymin, ymax = int(min(face, key=lambda l: l.y).y * ih), int(
-                max(face, key=lambda l: l.y).y * ih
-            )
-            bbox = [xmin, ymin, xmax - xmin, ymax - ymin]
+            # xmin, xmax = int(min(face, key=lambda l: l.x).x * iw), int(
+            #     max(face, key=lambda l: l.x).x * iw
+            # )
+            # ymin, ymax = int(min(face, key=lambda l: l.y).y * ih), int(
+            #     max(face, key=lambda l: l.y).y * ih
+            # )
+            # bbox = [xmin, ymin, xmax - xmin, ymax - ymin]
 
             if draw:
                 self.draw_landmarks(img, results.multi_face_landmarks[0])
@@ -225,53 +226,3 @@ class FaceDetector:
             landmark_drawing_spec=None,
             connection_drawing_spec=self.mp_drawing_styles.get_default_face_mesh_iris_connections_style(),
         )
-
-
-from HandModule import MyHandDetector
-
-
-def main():
-    facedetector = FaceDetector(
-        max_num_faces=1,
-        refine_landmarks=False,
-        min_detection_confidence=0.8,
-        min_tracking_confidence=0.8,
-        focus_length=640,
-    )
-    handdetector = MyHandDetector(False, 1, 0.70, 0.7)
-
-    cap = cv2.VideoCapture(0)
-
-    while cap.isOpened():
-        success, frame = cap.read()
-        iw, ih, _ = frame.shape
-        frame = cv2.resize(frame, (iw, ih))
-
-        if not success:
-            continue
-
-        frame, bbox, dist, event = facedetector.detect_face(frame, False)
-
-        if dist > 0:
-            # Area de reconhecimento para as mãos
-            x, y, w, h = (
-                abs(bbox[0] - 220),
-                abs(bbox[1]),
-                abs(bbox[2] + 80),
-                abs(bbox[3] + 70),
-            )
-            imgDetect = frame[y : (y + h), x : (x + w)]
-            cvzone.cornerRect(frame, [x, y, w, h])
-            event = handdetector.gestureRecognizer(imgDetect, (20, 20))
-
-        cv2.imshow("MediaPipe Face Mesh", frame)
-
-        if cv2.waitKey(2) & 0xFF == ord("q"):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    main()

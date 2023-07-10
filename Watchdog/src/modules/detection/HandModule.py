@@ -4,10 +4,19 @@ import cv2
 import numpy as np
 import time
 
+import cvzone
 from cvzone.HandTrackingModule import HandDetector
+
+import mediapipe as mp
 
 
 class MyHandDetector(HandDetector):
+    """
+    Hand Detector using the cvzone, mediapipe HandTracking
+    Detect hand and recognize finger gestures and waving gesture
+    The detection can be in an area close to the face, with de bbox info
+    """
+
     fingers_gestures = [
         [0, 1, 0, 0, 0],  # "TAKEOFF"
         [0, 0, 0, 0, 1],  # "RIGHT"
@@ -17,13 +26,7 @@ class MyHandDetector(HandDetector):
         [0, 1, 1, 0, 0],  # "LAND"
     ]
 
-    def __init__(
-        self,
-        mode=False,
-        maxHands=2,
-        minDetectionCon=0.5,
-        minTrackCon=0.5,
-    ):
+    def __init__(self, mode=False, maxHands=2, minDetectionCon=0.5, minTrackCon=0.5):
         """
         :param mode: In static mode, detection is done on each image: slower
         :param maxHands: Maximum number of hands to detect
@@ -36,20 +39,32 @@ class MyHandDetector(HandDetector):
         self.recognized_lateral_moviment = False
         self.right_moviment = self.left_moviment = 0
         self.start_wave_time = time.time()
-        self.limit_wave_time = 1.0
+        self.limit_wave_time = 0.8
 
-    def gestureRecognizer(self, img, textPoint=(20, 20)):
+    def gestureRecognizer(self, imgDetect, imgDraw, face_bbox: list = []):
         """
         Performs hand detection and
         return the event interpreted by the identified gesture
-        :param img: Image for detection
-        :param textPoint: point (x, y) for writing the event
+        :param imgDetect: Image for detection
+        :param imgDraw: Image for drawing 
+        :param face_bbox: Bbox for generate detection area close to the face
         """
+
+        # Area for detection, if the face info is provided
+        if len(face_bbox):
+            x, y, w, h = (
+                abs(face_bbox[0] - 220),
+                abs(face_bbox[1]),
+                abs(face_bbox[2] + 80),
+                abs(face_bbox[3] + 70),
+            )
+            imgDetect = imgDetect[y : (y + h), x : (x + w)]
+            cvzone.cornerRect(imgDraw, [x, y, w, h])
 
         event = -1
 
         # Detect hand and identify the gesture by finger positions
-        hands = self.findHands(img, False)
+        hands = self.findHands(imgDetect, False)
 
         if hands:
             hand = hands[0]
@@ -70,9 +85,9 @@ class MyHandDetector(HandDetector):
             if fingers == [1, 1, 1, 1, 1]:
                 hand_x_center = hand["center"][0]  # cx of the hand
 
-                if hand_x_center < self.hand_previous_pos_x - 24:
+                if hand_x_center < self.hand_previous_pos_x - 20:
                     self.left_moviment += 1
-                elif hand_x_center > self.hand_previous_pos_x + 24:
+                elif hand_x_center > self.hand_previous_pos_x + 20:
                     self.right_moviment += 1
 
                 if (self.right_moviment == 1 or self.left_moviment == 1) and (
@@ -91,11 +106,18 @@ class MyHandDetector(HandDetector):
 
                 self.hand_previous_pos_x = hand_x_center
             else:
-                self.start_wave_time = time.time()
                 self.recognized_lateral_moviment = False
                 self.right_moviment = self.left_moviment = 0
 
-        cv2.putText(img, str(event), textPoint, cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2)
+        cv2.putText(
+            imgDraw,
+            str(f"Hand:{event}"),
+            (imgDraw.shape[1] - 150, imgDraw.shape[0] - 20),
+            cv2.FONT_HERSHEY_PLAIN,
+            2,
+            (0, 255, 0),
+            2,
+        )
 
         return event
 
@@ -104,16 +126,13 @@ def main():
     cap = cv2.VideoCapture(0)
 
     detector = MyHandDetector(
-        mode=False,
-        maxHands=1,
-        minDetectionCon=0.8,
-        minTrackCon=0.7,
+        mode=False, maxHands=1, minDetectionCon=0.8, minTrackCon=0.7
     )
 
     while True:
-        _, frame = cap.read()
+        success, frame = cap.read()
 
-        detector.gestureRecognizer(frame)
+        detector.gestureRecognizer(frame, frame)
 
         cv2.imshow("Frame", frame)
 
