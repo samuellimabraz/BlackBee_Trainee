@@ -1,10 +1,20 @@
 <launch>
-  <arg name="image_topic" default="webcam" />
 
-  <node name="detect_node" pkg="watchdog" type="detector.py" output="screen">
+  <arg name="image_topic" default="bebop" />
+  
+  <node if="$(eval image_topic=='bebop')" pkg="bebop_driver" type="bebop_driver_node" name="bebop_driver_node" output="screen" />
+
+  <node if="$(eval image_topic=='webcam')" pkg="watchdog" type="webcam_node.py" name="webcam_publisher_node" output="screen" />
+
+
+  <node name="hand_gesture_node" pkg="watchdog" type="gesture_detection_node.py" output="screen">
+    <param name="image_topic" value="$(arg image_topic)" />
+  </node>
+
+  <node name="depth_detection_node" pkg="watchdog" type="depth_detection_node.py" output="screen">
     <param name="image_topic" value="$(arg image_topic)" />
   </node>
   
-  <node name="controller_node" pkg="watchdog" type="Control.py" output="screen"/>
+  <node name="controller_node" pkg="watchdog" type="controller_node.py" output="screen"/>
 </launch>
 
