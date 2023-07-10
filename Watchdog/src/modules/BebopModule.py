@@ -110,7 +110,7 @@ class Bebop:
     def screw(self):
         print("Screw Moviment")
         t_start = t_now = rospy.get_rostime()
-        duration = rospy.Duration(20)
+        duration = rospy.Duration(5)
 
         while t_now <= t_start + duration:
             if self.altitude > 4:
