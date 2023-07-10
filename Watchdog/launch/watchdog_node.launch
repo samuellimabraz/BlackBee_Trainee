@@ -1,4 +1,5 @@
 <launch>
+
   <arg name="image_topic" default="bebop" />
   
   <node if="$(eval image_topic=='bebop')" pkg="bebop_driver" type="bebop_driver_node" name="bebop_driver_node" output="screen" />
@@ -16,6 +17,4 @@
   
   <node name="controller_node" pkg="watchdog" type="controller_node.py" output="screen"/>
 </launch>
-
-
 
